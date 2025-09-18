@@ -48,6 +48,66 @@
 #define TVTOP_FORMAT_REG        0x0010
 #define TVTOP_RESOLUTION_REG    0x0014
 
+/* Interrupt Control and Status Register offsets */
+#define TVTOP_IRQ_MASK_REG      0x0018
+#define TVTOP_IRQ_RAW_STATUS_REG 0x001c
+
+/* Additional TVTOP Registers (Factory Driver Pattern from Task 022) */
+#define TVTOP_CLK_CTRL_REG      0x0020   /* Clock control register */
+#define TVTOP_RST_CTRL_REG      0x0024   /* Reset control register */
+#define TVTOP_DMA_CTRL_REG      0x0028   /* DMA control register */
+#define TVTOP_DMA_ADDR_REG      0x002c   /* DMA buffer address */
+#define TVTOP_DMA_SIZE_REG      0x0030   /* DMA transfer size */
+#define TVTOP_CAPTURE_CTRL_REG  0x0034   /* Capture control register */
+#define TVTOP_CAPTURE_SIZE_REG  0x0038   /* Capture frame size */
+#define TVTOP_HDMI_CTRL_REG     0x003c   /* HDMI input control */
+#define TVTOP_HDMI_STATUS_REG   0x0040   /* HDMI input status */
+#define TVTOP_DEBUG_REG         0x00fc   /* Debug/version register */
+
+/* TV TOP Control Register Bit Definitions (from factory analysis) */
+#define TVTOP_CTRL_ENABLE       BIT(0)    /* Enable TV TOP subsystem */
+#define TVTOP_CTRL_CAPTURE_EN   BIT(1)    /* Enable capture function */
+#define TVTOP_CTRL_HDMI_EN      BIT(2)    /* Enable HDMI input */
+#define TVTOP_CTRL_DMA_EN       BIT(3)    /* Enable DMA transfers */
+#define TVTOP_CTRL_AUTO_FORMAT  BIT(4)    /* Auto format detection */
+#define TVTOP_CTRL_RESET        BIT(31)   /* Software reset */
+
+/* Enhanced TV TOP Status Register Bits */
+#define TVTOP_STATUS_DMA_BUSY       BIT(4)  /* DMA transfer active */
+#define TVTOP_STATUS_ERROR          BIT(5)  /* Error condition */
+#define TVTOP_STATUS_READY          BIT(6)  /* Hardware ready */
+#define TVTOP_STATUS_FIFO_FULL      BIT(7)  /* Input FIFO full */
+
+/* HDMI Control and Status */
+#define TVTOP_HDMI_HPD_ENABLE   BIT(0)    /* Enable hot-plug detection */
+#define TVTOP_HDMI_EDID_READ    BIT(1)    /* Trigger EDID read */
+#define TVTOP_HDMI_FORCE_DETECT BIT(2)    /* Force signal detection */
+
+/* Hardware timing constants (from factory driver analysis) */
+#define TVTOP_RESET_DELAY_US    10     /* Reset pulse duration */
+#define TVTOP_STABILIZE_DELAY_US 100   /* Hardware stabilization time */
+#define TVTOP_TIMEOUT_MS        5000   /* Operation timeout */
+
+/* TV Capture Interrupt Flags (based on Task 022 factory analysis) */
+#define TVTOP_IRQ_FRAME_DONE    BIT(0)   /* Frame capture completion */
+#define TVTOP_IRQ_INPUT_CHANGE  BIT(1)   /* HDMI input detect change */
+#define TVTOP_IRQ_FORMAT_CHANGE BIT(2)   /* Format/resolution change */
+#define TVTOP_IRQ_BUF_OVERFLOW  BIT(3)   /* Buffer overflow error */
+#define TVTOP_IRQ_BUF_UNDERFLOW BIT(4)   /* Buffer underflow error */
+#define TVTOP_IRQ_HDMI_HOTPLUG  BIT(5)   /* HDMI hot-plug detect */
+#define TVTOP_IRQ_HW_ERROR      BIT(6)   /* Hardware error condition */
+#define TVTOP_IRQ_DMA_ERROR     BIT(7)   /* DMA transfer error */
+#define TVTOP_IRQ_FIFO_ERROR    BIT(8)   /* FIFO error */
+#define TVTOP_IRQ_TIMEOUT       BIT(9)   /* Timeout error */
+
+/* Combined interrupt masks */
+#define TVTOP_IRQ_ALL_ERRORS    (TVTOP_IRQ_BUF_OVERFLOW | TVTOP_IRQ_BUF_UNDERFLOW | \
+                                 TVTOP_IRQ_HW_ERROR | TVTOP_IRQ_DMA_ERROR | \
+                                 TVTOP_IRQ_FIFO_ERROR | TVTOP_IRQ_TIMEOUT)
+#define TVTOP_IRQ_ALL_EVENTS    (TVTOP_IRQ_FRAME_DONE | TVTOP_IRQ_INPUT_CHANGE | \
+                                 TVTOP_IRQ_FORMAT_CHANGE | TVTOP_IRQ_HDMI_HOTPLUG)
+#define TVTOP_IRQ_ALL_MASK      (TVTOP_IRQ_ALL_ERRORS | TVTOP_IRQ_ALL_EVENTS)
+
 /* TV Capture Status Flags */
 #define TVTOP_STATUS_HDMI_CONNECTED BIT(0)
 #define TVTOP_STATUS_SIGNAL_DETECTED BIT(1)
@@ -84,6 +144,7 @@ struct tvcap_format {
 	u32 fourcc;
 	u32 depth;
 	u32 planes;
+	u32 tvtop_format;
 	const char *name;
 };
 
@@ -92,24 +153,29 @@ static const struct tvcap_format formats[] = {
 		.fourcc = V4L2_PIX_FMT_YUYV,
 		.depth = 16,
 		.planes = 1,
+		.tvtop_format = 0x04, /* TVTOP_FORMAT_YUYV */
 		.name = "YUV 4:2:2 (YUYV)",
 	},
 	{
 		.fourcc = V4L2_PIX_FMT_YUV420,
 		.depth = 12,
 		.planes = 3,
+		.tvtop_format = 0x02, /* TVTOP_FORMAT_YUV420P */
 		.name = "YUV 4:2:0 Planar",
 	},
 	{
 		.fourcc = V4L2_PIX_FMT_RGB24,
 		.depth = 24,
 		.planes = 1,
+		.tvtop_format = 0x00, /* TVTOP_FORMAT_RGB888 */
+		.tvtop_format = 0x04, /* TVTOP_FORMAT_YUYV */
 		.name = "RGB 8-8-8",
 	},
 	{
 		.fourcc = V4L2_PIX_FMT_RGB32,
 		.depth = 32,
 		.planes = 1,
+		.tvtop_format = 0x04, /* TVTOP_FORMAT_YUYV */
 		.name = "RGB 8-8-8-8",
 	},
 };
@@ -134,6 +200,11 @@ struct sunxi_tvcap_dev {
 	bool hdmi_connected;
 	bool signal_detected;
 	bool streaming;
+
+	/* Hardware state */
+	bool tvtop_initialized;
+	u32 current_resolution;
+	u32 current_format;
 
 	/* Synchronization */
 	struct mutex lock;
@@ -454,15 +525,28 @@ static int tvcap_hw_init(struct sunxi_tvcap_dev *tvcap)
 		goto err_clocks_cleanup;
 	}
 	
-	/* Step 4: Basic hardware initialization */
-	writel(0, tvcap->regs + TVTOP_CTRL_REG);
-	writel(0, tvcap->regs + TVTOP_IRQ_EN_REG);
+	/* Step 4: Enhanced TVTOP initialization sequence */
+	ret = tvtop_software_reset(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "TVTOP software reset failed: %d\n", ret);
+		goto err_clocks_cleanup;
+	}
 	
-	/* Clear any pending interrupts */
-	reg_val = readl(tvcap->regs + TVTOP_IRQ_STATUS_REG);
-	writel(reg_val, tvcap->regs + TVTOP_IRQ_STATUS_REG);
+	ret = tvtop_enable_subsystem(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "TVTOP subsystem enable failed: %d\n", ret);
+		goto err_clocks_cleanup;
+	}
 	
-	dev_info(tvcap->dev, "TV capture hardware initialized successfully\n");
+	/* Clear any pending interrupts using enhanced interface */
+	tvtop_read_and_clear_interrupts(tvcap);
+	
+	/* Enable essential interrupts */
+	tvtop_enable_interrupts(tvcap, TVTOP_IRQ_ALL_EVENTS | TVTOP_IRQ_ALL_ERRORS);
+	
+	tvcap->tvtop_initialized = true;
+	
+	dev_info(tvcap->dev, "TV capture hardware with enhanced TVTOP interface initialized successfully\n");
 	return 0;
 
 err_clocks_cleanup:
@@ -477,8 +561,14 @@ static void tvcap_hw_cleanup(struct sunxi_tvcap_dev *tvcap)
 {
 	dev_dbg(tvcap->dev, "Cleaning up TV capture hardware\n");
 	
-	/* Disable interrupts first */
-	writel(0, tvcap->regs + TVTOP_IRQ_EN_REG);
+	/* Disable all interrupts first using enhanced interface */
+	tvtop_disable_interrupts(tvcap, TVTOP_IRQ_ALL_MASK);
+	
+	/* Disable TVTOP subsystem if initialized */
+	if (tvcap->tvtop_initialized) {
+		tvtop_disable_subsystem(tvcap);
+		tvcap->tvtop_initialized = false;
+	}
 	
 	/* Assert reset lines to put hardware in safe state */
 	tvcap_resets_assert(tvcap);
@@ -486,38 +576,168 @@ static void tvcap_hw_cleanup(struct sunxi_tvcap_dev *tvcap)
 	/* Disable clocks after hardware is in reset state */
 	tvcap_clocks_disable(tvcap);
 	
-	dev_dbg(tvcap->dev, "TV capture hardware cleanup completed\n");
+	dev_dbg(tvcap->dev, "TV capture hardware with enhanced TVTOP interface cleanup completed\n");
 }
 
 /*
- * Interrupt handler
+ * Interrupt handler implementation
+ * Enhanced based on Task 022 factory firmware analysis
  */
+
+static void tvcap_handle_frame_done(struct sunxi_tvcap_dev *tvcap)
+{
+	struct tvcap_buffer *buf;
+	struct vb2_v4l2_buffer *vbuf;
+	
+	if (list_empty(&tvcap->buf_list)) {
+		dev_warn(tvcap->dev, "Frame completion but no buffer available\n");
+		return;
+	}
+	
+	buf = list_first_entry(&tvcap->buf_list, struct tvcap_buffer, list);
+	list_del(&buf->list);
+	
+	vbuf = &buf->vb;
+	vbuf->vb2_buf.timestamp = ktime_get_ns();
+	vbuf->sequence = tvcap->sequence++;
+	vbuf->field = V4L2_FIELD_NONE;
+	
+	vb2_buffer_done(&vbuf->vb2_buf, VB2_BUF_STATE_DONE);
+	
+	dev_dbg(tvcap->dev, "Frame completed: sequence %d\n", vbuf->sequence);
+}
+
+static void tvcap_handle_input_change(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 status_reg;
+	bool was_connected = tvcap->hdmi_connected;
+	bool was_detected = tvcap->signal_detected;
+	
+	/* Use enhanced TVTOP functions for accurate status checking */
+	bool new_connected = tvtop_is_hdmi_connected(tvcap);
+	bool new_detected = tvtop_is_signal_detected(tvcap);
+	
+	/* Update status from enhanced detection */
+	tvcap->hdmi_connected = new_connected;
+	tvcap->signal_detected = new_detected;
+	
+	if (tvcap->hdmi_connected != was_connected) {
+		dev_info(tvcap->dev, "HDMI %s\n", 
+			 tvcap->hdmi_connected ? "connected" : "disconnected");
+	}
+	
+	if (tvcap->signal_detected != was_detected) {
+		dev_info(tvcap->dev, "HDMI signal %s\n",
+			 tvcap->signal_detected ? "detected" : "lost");
+		
+		/* TODO: Trigger EDID reading and format detection via MIPS */
+		/* This will be implemented in MIPS coordination task */
+	}
+	
+	/* Send V4L2 event for input change */
+	if (tvcap->hdmi_connected != was_connected || 
+	    tvcap->signal_detected != was_detected) {
+		struct v4l2_event ev = {
+			.type = V4L2_EVENT_SOURCE_CHANGE,
+			.u.src_change.changes = V4L2_EVENT_SRC_CH_RESOLUTION,
+		};
+		v4l2_event_queue(&tvcap->video_dev, &ev);
+	}
+}
+
+static void tvcap_handle_format_change(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 format_reg, resolution_reg;
+	
+	format_reg = tvtop_read(tvcap, TVTOP_FORMAT_REG);
+	resolution_reg = tvtop_read(tvcap, TVTOP_RESOLUTION_REG);
+	
+	dev_info(tvcap->dev, "Format change detected: format=0x%08x, resolution=0x%08x\n",
+		 format_reg, resolution_reg);
+	
+	/* TODO: Parse format and resolution registers */
+	/* TODO: Update internal format state */
+	/* TODO: Notify applications via V4L2 events */
+	
+	/* Send V4L2 event for format change */
+	struct v4l2_event ev = {
+		.type = V4L2_EVENT_SOURCE_CHANGE,
+		.u.src_change.changes = V4L2_EVENT_SRC_CH_RESOLUTION,
+	};
+	v4l2_event_queue(&tvcap->video_dev, &ev);
+}
+
+static void tvcap_handle_errors(struct sunxi_tvcap_dev *tvcap, u32 error_status)
+{
+	if (error_status & TVTOP_IRQ_BUF_OVERFLOW) {
+		dev_err(tvcap->dev, "Buffer overflow error - dropping frames\n");
+	}
+	
+	if (error_status & TVTOP_IRQ_BUF_UNDERFLOW) {
+		dev_err(tvcap->dev, "Buffer underflow error - capture starvation\n");
+	}
+	
+	if (error_status & TVTOP_IRQ_HW_ERROR) {
+		dev_err(tvcap->dev, "Hardware error detected\n");
+	}
+	
+	if (error_status & TVTOP_IRQ_DMA_ERROR) {
+		dev_err(tvcap->dev, "DMA transfer error\n");
+	}
+	
+	/* Return all pending buffers with error state on serious errors */
+	if (error_status & (TVTOP_IRQ_HW_ERROR | TVTOP_IRQ_DMA_ERROR | \
+                                 TVTOP_IRQ_FIFO_ERROR | TVTOP_IRQ_TIMEOUT)) {
+		struct tvcap_buffer *buf, *tmp;
+		
+		list_for_each_entry_safe(buf, tmp, &tvcap->buf_list, list) {
+			list_del(&buf->list);
+			vb2_buffer_done(&buf->vb.vb2_buf, VB2_BUF_STATE_ERROR);
+		}
+	}
+}
+
 static irqreturn_t tvcap_irq_handler(int irq, void *dev_id)
 {
 	struct sunxi_tvcap_dev *tvcap = dev_id;
-	u32 status;
+	u32 status, error_status;
+	irqreturn_t ret = IRQ_NONE;
 	
 	spin_lock(&tvcap->irq_lock);
 	
-	status = readl(tvcap->regs + TVTOP_IRQ_STATUS_REG);
+	status = tvtop_read_and_clear_interrupts(tvcap);
 	if (!status) {
 		spin_unlock(&tvcap->irq_lock);
-		return IRQ_NONE;
+		return ret;
 	}
 	
-	/* Clear interrupt status */
-	writel(status, tvcap->regs + TVTOP_IRQ_STATUS_REG);
+	ret = IRQ_HANDLED;
 	
 	dev_dbg(tvcap->dev, "TV capture interrupt: 0x%08x\n", status);
 	
-	/* TODO: Handle specific interrupt types */
-	/* - HDMI hot-plug detection */
-	/* - Signal format detection */
-	/* - Capture completion */
-	/* - Error conditions */
+	/* Handle frame completion */
+	if (status & TVTOP_IRQ_FRAME_DONE) {
+		tvcap_handle_frame_done(tvcap);
+	}
+	
+	/* Handle input changes */
+	if (status & (TVTOP_IRQ_INPUT_CHANGE | TVTOP_IRQ_HDMI_HOTPLUG)) {
+		tvcap_handle_input_change(tvcap);
+	}
+	
+	/* Handle format changes */
+	if (status & TVTOP_IRQ_FORMAT_CHANGE) {
+		tvcap_handle_format_change(tvcap);
+	}
+	
+	/* Handle error conditions */
+	error_status = status & TVTOP_IRQ_ALL_ERRORS;
+	if (error_status) {
+		tvcap_handle_errors(tvcap, error_status);
+	}
 	
 	spin_unlock(&tvcap->irq_lock);
-	return IRQ_HANDLED;
+	return ret;
 }
 
 /*
@@ -959,4 +1179,280 @@ MODULE_DESCRIPTION("Allwinner H713 TV Capture V4L2 Driver");
 MODULE_AUTHOR("HY300 Linux Porting Project");
 MODULE_LICENSE("GPL v2");
 MODULE_VERSION("1.0.0");
-MODULE_ALIAS("platform:" SUNXI_TVCAP_NAME);
+MODULE_ALIAS("platform:" SUNXI_TVCAP_NAME);=== HY300 Projector Development Environment ===
+Cross-compile toolchain: aarch64-unknown-linux-gnu-
+Target architecture: arm64
+Sunxi tools available: sunxi-fel, sunxi-fexc, etc.
+
+Key tools installed:
+- Cross-compilation: aarch64-unknown-linux-gnu-gcc
+- Sunxi tools: sunxi-fel, sunxi-fexc
+- Firmware analysis: binwalk, hexdump, strings
+- Serial console: minicom, picocom
+- Device tree: dtc
+
+ROM analysis workflow:
+1. Extract firmware: binwalk -e firmware.img
+2. FEL access: sunxi-fel version
+3. Backup eMMC: sunxi-fel read 0x0 0x1000000 backup.img
+
+
+/*
+ * TVTOP Register Access Functions (Enhanced Implementation based on Task 022)
+ */
+
+static inline u32 tvtop_read(struct sunxi_tvcap_dev *tvcap, u32 reg)
+{
+	return readl(tvcap->regs + reg);
+}
+
+static inline void tvtop_write(struct sunxi_tvcap_dev *tvcap, u32 reg, u32 val)
+{
+	writel(val, tvcap->regs + reg);
+}
+
+static inline void tvtop_set_bits(struct sunxi_tvcap_dev *tvcap, u32 reg, u32 bits)
+{
+	u32 val = tvtop_read(tvcap, reg);
+	tvtop_write(tvcap, reg, val | bits);
+}
+
+static inline void tvtop_clear_bits(struct sunxi_tvcap_dev *tvcap, u32 reg, u32 bits)
+{
+	u32 val = tvtop_read(tvcap, reg);
+	tvtop_write(tvcap, reg, val & ~bits);
+}
+
+static inline void tvtop_update_bits(struct sunxi_tvcap_dev *tvcap, u32 reg, u32 mask, u32 val)
+{
+	u32 current = tvtop_read(tvcap, reg);
+	tvtop_write(tvcap, reg, (current & ~mask) | (val & mask));
+}
+
+/*
+ * TVTOP Hardware Control Functions (Factory Driver Patterns from Task 022)
+ */
+
+static int tvtop_wait_for_ready(struct sunxi_tvcap_dev *tvcap)
+{
+	unsigned long timeout = jiffies + msecs_to_jiffies(TVTOP_TIMEOUT_MS);
+	u32 status;
+
+	do {
+		status = tvtop_read(tvcap, TVTOP_STATUS_REG);
+		if (status & TVTOP_STATUS_READY)
+			return 0;
+		
+		usleep_range(100, 200);
+	} while (time_before(jiffies, timeout));
+
+	dev_err(tvcap->dev, "TVTOP wait for ready timeout, status=0x%08x\n", status);
+	return -ETIMEDOUT;
+}
+
+static int tvtop_software_reset(struct sunxi_tvcap_dev *tvcap)
+{
+	int ret;
+
+	dev_dbg(tvcap->dev, "Performing TVTOP software reset\n");
+
+	/* Assert software reset */
+	tvtop_set_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_RESET);
+	
+	/* Hold reset for required duration */
+	usleep_range(TVTOP_RESET_DELAY_US, TVTOP_RESET_DELAY_US * 2);
+	
+	/* Deassert software reset */
+	tvtop_clear_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_RESET);
+	
+	/* Wait for hardware to become ready */
+	usleep_range(TVTOP_STABILIZE_DELAY_US, TVTOP_STABILIZE_DELAY_US * 2);
+	
+	ret = tvtop_wait_for_ready(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "TVTOP failed to become ready after reset\n");
+		return ret;
+	}
+
+	dev_info(tvcap->dev, "TVTOP software reset completed successfully\n");
+	return 0;
+}
+
+static int tvtop_enable_subsystem(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 ctrl_val = 0;
+	int ret;
+
+	dev_dbg(tvcap->dev, "Enabling TVTOP subsystem\n");
+
+	/* Build control register value based on factory patterns */
+	ctrl_val |= TVTOP_CTRL_ENABLE;      /* Enable TV TOP */
+	ctrl_val |= TVTOP_CTRL_HDMI_EN;     /* Enable HDMI input */
+	ctrl_val |= TVTOP_CTRL_AUTO_FORMAT; /* Enable auto format detection */
+
+	/* Write control register */
+	tvtop_write(tvcap, TVTOP_CTRL_REG, ctrl_val);
+
+	/* Verify subsystem enabled */
+	ret = tvtop_wait_for_ready(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "TVTOP subsystem enable failed\n");
+		return ret;
+	}
+
+	/* Enable HDMI hot-plug detection */
+	tvtop_set_bits(tvcap, TVTOP_HDMI_CTRL_REG, TVTOP_HDMI_HPD_ENABLE);
+
+	dev_info(tvcap->dev, "TVTOP subsystem enabled successfully\n");
+	return 0;
+}
+
+static void tvtop_disable_subsystem(struct sunxi_tvcap_dev *tvcap)
+{
+	dev_dbg(tvcap->dev, "Disabling TVTOP subsystem\n");
+
+	/* Disable capture first */
+	tvtop_clear_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_CAPTURE_EN | TVTOP_CTRL_DMA_EN);
+	
+	/* Disable HDMI input */
+	tvtop_clear_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_HDMI_EN);
+	tvtop_clear_bits(tvcap, TVTOP_HDMI_CTRL_REG, TVTOP_HDMI_HPD_ENABLE);
+	
+	/* Disable entire subsystem */
+	tvtop_clear_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_ENABLE);
+
+	dev_dbg(tvcap->dev, "TVTOP subsystem disabled\n");
+}
+
+static int tvtop_configure_format(struct sunxi_tvcap_dev *tvcap, const struct tvcap_format *fmt, 
+                                  u32 width, u32 height)
+{
+	u32 resolution;
+
+	dev_dbg(tvcap->dev, "Configuring TVTOP format: %s %dx%d\n", 
+		fmt->name, width, height);
+
+	/* Set video format in TVTOP register */
+	tvtop_write(tvcap, TVTOP_FORMAT_REG, fmt->tvtop_format);
+
+	/* Set resolution (height in upper 16 bits, width in lower 16 bits) */
+	resolution = (height << 16) | width;
+	tvtop_write(tvcap, TVTOP_RESOLUTION_REG, resolution);
+
+	/* Update capture frame size */
+	tvtop_write(tvcap, TVTOP_CAPTURE_SIZE_REG, resolution);
+
+	/* Store current configuration */
+	tvcap->current_format = fmt->tvtop_format;
+	tvcap->current_resolution = resolution;
+
+	dev_info(tvcap->dev, "TVTOP format configured: format=0x%02x, resolution=0x%08x\n",
+		 fmt->tvtop_format, resolution);
+	return 0;
+}
+
+static int tvtop_start_capture(struct sunxi_tvcap_dev *tvcap, dma_addr_t dma_addr, u32 size)
+{
+	u32 status;
+	int ret;
+
+	dev_dbg(tvcap->dev, "Starting TVTOP capture: dma=0x%llx, size=%u\n", 
+		(unsigned long long)dma_addr, size);
+
+	/* Check if HDMI input is available */
+	status = tvtop_read(tvcap, TVTOP_STATUS_REG);
+	if (!(status & TVTOP_STATUS_HDMI_CONNECTED)) {
+		dev_warn(tvcap->dev, "HDMI not connected, capture may fail\n");
+	}
+	if (!(status & TVTOP_STATUS_SIGNAL_DETECTED)) {
+		dev_warn(tvcap->dev, "No HDMI signal detected, capture may fail\n");
+	}
+
+	/* Configure DMA buffer */
+	tvtop_write(tvcap, TVTOP_DMA_ADDR_REG, lower_32_bits(dma_addr));
+	tvtop_write(tvcap, TVTOP_DMA_SIZE_REG, size);
+
+	/* Enable DMA */
+	tvtop_set_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_DMA_EN);
+	tvtop_set_bits(tvcap, TVTOP_DMA_CTRL_REG, BIT(0)); /* DMA start */
+
+	/* Enable capture */
+	tvtop_set_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_CAPTURE_EN);
+
+	/* Verify capture started */
+	ret = tvtop_wait_for_ready(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "TVTOP capture start failed\n");
+		tvtop_clear_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_CAPTURE_EN | TVTOP_CTRL_DMA_EN);
+		return ret;
+	}
+
+	dev_info(tvcap->dev, "TVTOP capture started successfully\n");
+	return 0;
+}
+
+static void tvtop_stop_capture(struct sunxi_tvcap_dev *tvcap)
+{
+	dev_dbg(tvcap->dev, "Stopping TVTOP capture\n");
+
+	/* Disable capture */
+	tvtop_clear_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_CAPTURE_EN);
+	
+	/* Disable DMA */
+	tvtop_clear_bits(tvcap, TVTOP_CTRL_REG, TVTOP_CTRL_DMA_EN);
+	tvtop_clear_bits(tvcap, TVTOP_DMA_CTRL_REG, BIT(0));
+
+	/* Clear DMA configuration */
+	tvtop_write(tvcap, TVTOP_DMA_ADDR_REG, 0);
+	tvtop_write(tvcap, TVTOP_DMA_SIZE_REG, 0);
+
+	dev_dbg(tvcap->dev, "TVTOP capture stopped\n");
+}
+
+static bool tvtop_is_hdmi_connected(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 status = tvtop_read(tvcap, TVTOP_STATUS_REG);
+	return !!(status & TVTOP_STATUS_HDMI_CONNECTED);
+}
+
+static bool tvtop_is_signal_detected(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 status = tvtop_read(tvcap, TVTOP_STATUS_REG);
+	return !!(status & TVTOP_STATUS_SIGNAL_DETECTED);
+}
+
+static u32 tvtop_get_hdmi_status(struct sunxi_tvcap_dev *tvcap)
+{
+	return tvtop_read(tvcap, TVTOP_HDMI_STATUS_REG);
+}
+
+/*
+ * TVTOP Interrupt Management (Enhanced Implementation)
+ */
+
+static void tvtop_enable_interrupts(struct sunxi_tvcap_dev *tvcap, u32 mask)
+{
+	u32 current_mask = tvtop_read(tvcap, TVTOP_IRQ_EN_REG);
+	tvtop_write(tvcap, TVTOP_IRQ_EN_REG, current_mask | mask);
+	
+	dev_dbg(tvcap->dev, "TVTOP interrupts enabled: 0x%08x\n", current_mask | mask);
+}
+
+static void tvtop_disable_interrupts(struct sunxi_tvcap_dev *tvcap, u32 mask)
+{
+	u32 current_mask = tvtop_read(tvcap, TVTOP_IRQ_EN_REG);
+	tvtop_write(tvcap, TVTOP_IRQ_EN_REG, current_mask & ~mask);
+	
+	dev_dbg(tvcap->dev, "TVTOP interrupts disabled: 0x%08x\n", current_mask & ~mask);
+}
+
+static u32 tvtop_read_and_clear_interrupts(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 status = tvtop_read(tvcap, TVTOP_IRQ_STATUS_REG);
+	if (status) {
+		tvtop_write(tvcap, TVTOP_IRQ_STATUS_REG, status);
+		dev_dbg(tvcap->dev, "TVTOP interrupts cleared: 0x%08x\n", status);
+	}
+	return status;
+}
+
