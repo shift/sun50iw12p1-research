@@ -91,3 +91,18 @@ hy300_h713_defconfig
 binwalk_output/
 strings_output.txt
 hexdump_output.txt
+# Build artifacts and temporary files
+*.o.d
+*.patch
+*.backup
+*.modified
+*.original
+*.pre-*
+*enhance_tvtop_interface.sh
+*helper_functions.c
+*task019_reset_line_control.patch
+*tv-capture-clock-patch.patch
+*tv_capture_clock_management.patch
+*tvcap-clock-patch.patch
+*tvtop_register_enhancement.patch
+*tvtop_register_interface.patch
