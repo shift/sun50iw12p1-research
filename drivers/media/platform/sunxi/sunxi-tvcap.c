@@ -525,26 +525,14 @@ static int tvcap_hw_init(struct sunxi_tvcap_dev *tvcap)
 		goto err_clocks_cleanup;
 	}
 	
-	/* Step 4: Enhanced TVTOP initialization sequence */
-	ret = tvtop_software_reset(tvcap);
+	
+	/* Step 4: Complete TVTOP hardware initialization */
+	ret = tvtop_init_hardware(tvcap);
 	if (ret) {
-		dev_err(tvcap->dev, "TVTOP software reset failed: %d\n", ret);
+		dev_err(tvcap->dev, "TVTOP hardware initialization failed: %d\n", ret);
 		goto err_clocks_cleanup;
 	}
 	
-	ret = tvtop_enable_subsystem(tvcap);
-	if (ret) {
-		dev_err(tvcap->dev, "TVTOP subsystem enable failed: %d\n", ret);
-		goto err_clocks_cleanup;
-	}
-	
-	/* Clear any pending interrupts using enhanced interface */
-	tvtop_read_and_clear_interrupts(tvcap);
-	
-	/* Enable essential interrupts */
-	tvtop_enable_interrupts(tvcap, TVTOP_IRQ_ALL_EVENTS | TVTOP_IRQ_ALL_ERRORS);
-	
-	tvcap->tvtop_initialized = true;
 	
 	dev_info(tvcap->dev, "TV capture hardware with enhanced TVTOP interface initialized successfully\n");
 	return 0;
@@ -1016,6 +1004,232 @@ static int tvcap_init_resources(struct sunxi_tvcap_dev *tvcap)
 	dev_info(dev, "Resources initialized successfully\n");
 	return 0;
 }
+
+/*
+ * Hardware Capability Detection Functions
+ * Based on Task 022 factory firmware analysis
+ */
+
+static int tvcap_detect_hardware_capabilities(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 version_reg, status_reg;
+	int ret = 0;
+	int i;
+
+	dev_info(tvcap->dev, "Detecting TV capture hardware capabilities\n");
+
+	/* Read hardware version/debug register */
+	version_reg = tvtop_read(tvcap, TVTOP_DEBUG_REG);
+	dev_info(tvcap->dev, "TVTOP hardware version: 0x%08x\n", version_reg);
+
+	/* Check basic hardware presence */
+	status_reg = tvtop_read(tvcap, TVTOP_STATUS_REG);
+	if (!(status_reg & TVTOP_STATUS_READY)) {
+		dev_err(tvcap->dev, "TVTOP hardware not ready, status=0x%08x\n", status_reg);
+		return -EIO;
+	}
+
+	/* Test basic register access */
+	tvtop_write(tvcap, TVTOP_FORMAT_REG, 0x12345678);
+	if (tvtop_read(tvcap, TVTOP_FORMAT_REG) != 0x12345678) {
+		dev_err(tvcap->dev, "TVTOP register access test failed\n");
+		ret = -EIO;
+	}
+	tvtop_write(tvcap, TVTOP_FORMAT_REG, 0); /* Clear test pattern */
+
+	/* Probe supported video formats by testing format register values */
+	dev_info(tvcap->dev, "Probing supported video formats:\n");
+	for (i = 0; i < ARRAY_SIZE(formats); i++) {
+		tvtop_write(tvcap, TVTOP_FORMAT_REG, formats[i].tvtop_format);
+		if (tvtop_read(tvcap, TVTOP_FORMAT_REG) == formats[i].tvtop_format) {
+			dev_info(tvcap->dev, "  - %s (0x%02x): supported\n", 
+				 formats[i].name, formats[i].tvtop_format);
+		} else {
+			dev_warn(tvcap->dev, "  - %s (0x%02x): not supported\n",
+				 formats[i].name, formats[i].tvtop_format);
+		}
+	}
+	tvtop_write(tvcap, TVTOP_FORMAT_REG, 0); /* Reset to default */
+
+	/* Test resolution register capabilities */
+	tvtop_write(tvcap, TVTOP_RESOLUTION_REG, 0x04380780); /* 1080p test */
+	if (tvtop_read(tvcap, TVTOP_RESOLUTION_REG) == 0x04380780) {
+		dev_info(tvcap->dev, "High resolution support: 1920x1080 confirmed\n");
+	}
+	tvtop_write(tvcap, TVTOP_RESOLUTION_REG, 0x02D00500); /* 720p test */
+	if (tvtop_read(tvcap, TVTOP_RESOLUTION_REG) == 0x02D00500) {
+		dev_info(tvcap->dev, "Standard resolution support: 1280x720 confirmed\n");
+	}
+	tvtop_write(tvcap, TVTOP_RESOLUTION_REG, 0); /* Reset */
+
+	dev_info(tvcap->dev, "Hardware capability detection completed\n");
+	return ret;
+}
+
+static int tvcap_probe_hdmi_capabilities(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 hdmi_ctrl, hdmi_status;
+	int ret = 0;
+
+	dev_info(tvcap->dev, "Probing HDMI input capabilities\n");
+
+	/* Enable HDMI subsystem for capability probing */
+	hdmi_ctrl = tvtop_read(tvcap, TVTOP_HDMI_CTRL_REG);
+	tvtop_write(tvcap, TVTOP_HDMI_CTRL_REG, hdmi_ctrl | TVTOP_HDMI_HPD_ENABLE);
+
+	/* Allow HDMI subsystem to stabilize */
+	msleep(10);
+
+	/* Read HDMI status */
+	hdmi_status = tvtop_read(tvcap, TVTOP_HDMI_STATUS_REG);
+	dev_info(tvcap->dev, "HDMI status register: 0x%08x\n", hdmi_status);
+
+	/* Test HDMI control register functionality */
+	tvtop_write(tvcap, TVTOP_HDMI_CTRL_REG, hdmi_ctrl | TVTOP_HDMI_FORCE_DETECT);
+	msleep(1);
+	if (tvtop_read(tvcap, TVTOP_HDMI_CTRL_REG) & TVTOP_HDMI_FORCE_DETECT) {
+		dev_info(tvcap->dev, "HDMI force detection capability: available\n");
+		tvtop_write(tvcap, TVTOP_HDMI_CTRL_REG, hdmi_ctrl); /* Restore */
+	}
+
+	/* Test EDID read capability */
+	tvtop_write(tvcap, TVTOP_HDMI_CTRL_REG, hdmi_ctrl | TVTOP_HDMI_EDID_READ);
+	msleep(5);
+	if (tvtop_read(tvcap, TVTOP_HDMI_CTRL_REG) & TVTOP_HDMI_EDID_READ) {
+		dev_info(tvcap->dev, "HDMI EDID read capability: available\n");
+	}
+	tvtop_write(tvcap, TVTOP_HDMI_CTRL_REG, hdmi_ctrl); /* Restore original */
+
+	/* Check current HDMI connection status */
+	if (tvtop_is_hdmi_connected(tvcap)) {
+		dev_info(tvcap->dev, "HDMI input: connected\n");
+		if (tvtop_is_signal_detected(tvcap)) {
+			dev_info(tvcap->dev, "HDMI signal: detected\n");
+		} else {
+			dev_info(tvcap->dev, "HDMI signal: not detected\n");
+		}
+	} else {
+		dev_info(tvcap->dev, "HDMI input: not connected\n");
+	}
+
+	dev_info(tvcap->dev, "HDMI capability probing completed\n");
+	return ret;
+}
+
+static int tvcap_verify_clock_initialization(struct sunxi_tvcap_dev *tvcap)
+{
+	int i;
+	unsigned long rate;
+
+	dev_dbg(tvcap->dev, "Verifying TV capture clock initialization\n");
+
+	for (i = 0; i < TVCAP_CLK_COUNT; i++) {
+		if (!__clk_is_enabled(tvcap->clks[i].clk)) {
+			dev_err(tvcap->dev, "Clock '%s' is not enabled\n", 
+				tvcap->clks[i].id);
+			return -EIO;
+		}
+
+		rate = clk_get_rate(tvcap->clks[i].clk);
+		dev_dbg(tvcap->dev, "Clock '%s': enabled, rate=%lu Hz\n",
+			tvcap->clks[i].id, rate);
+	}
+
+	dev_info(tvcap->dev, "Clock initialization verification: passed\n");
+	return 0;
+}
+
+static int tvcap_verify_reset_initialization(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 status_reg;
+
+	dev_dbg(tvcap->dev, "Verifying TV capture reset initialization\n");
+
+	/* Check that hardware is out of reset and functional */
+	status_reg = tvtop_read(tvcap, TVTOP_STATUS_REG);
+	if (!(status_reg & TVTOP_STATUS_READY)) {
+		dev_err(tvcap->dev, "Hardware not ready after reset, status=0x%08x\n", 
+			status_reg);
+		return -EIO;
+	}
+
+	/* Verify we can access control registers */
+	if (tvtop_read(tvcap, TVTOP_CTRL_REG) == 0xFFFFFFFF) {
+		dev_err(tvcap->dev, "Control register access failed after reset\n");
+		return -EIO;
+	}
+
+	dev_info(tvcap->dev, "Reset initialization verification: passed\n");
+	return 0;
+}
+
+static int tvcap_verify_hardware_initialization(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 ctrl_reg, status_reg, irq_en_reg;
+	u32 test_pattern = 0xA5A5A5A5;
+	int ret;
+
+	dev_info(tvcap->dev, "Verifying complete hardware initialization\n");
+
+	/* Verify clock initialization */
+	ret = tvcap_verify_clock_initialization(tvcap);
+	if (ret)
+		return ret;
+
+	/* Verify reset initialization */
+	ret = tvcap_verify_reset_initialization(tvcap);
+	if (ret)
+		return ret;
+
+	/* Verify TVTOP subsystem is enabled */
+	ctrl_reg = tvtop_read(tvcap, TVTOP_CTRL_REG);
+	if (!(ctrl_reg & TVTOP_CTRL_ENABLE)) {
+		dev_err(tvcap->dev, "TVTOP subsystem not enabled, ctrl=0x%08x\n", ctrl_reg);
+		return -EIO;
+	}
+
+	/* Verify HDMI input is enabled */
+	if (!(ctrl_reg & TVTOP_CTRL_HDMI_EN)) {
+		dev_err(tvcap->dev, "HDMI input not enabled, ctrl=0x%08x\n", ctrl_reg);
+		return -EIO;
+	}
+
+	/* Verify hardware status is ready */
+	status_reg = tvtop_read(tvcap, TVTOP_STATUS_REG);
+	if (!(status_reg & TVTOP_STATUS_READY)) {
+		dev_err(tvcap->dev, "Hardware not ready, status=0x%08x\n", status_reg);
+		return -EIO;
+	}
+
+	/* Verify interrupts are properly configured */
+	irq_en_reg = tvtop_read(tvcap, TVTOP_IRQ_EN_REG);
+	if ((irq_en_reg & (TVTOP_IRQ_ALL_EVENTS | TVTOP_IRQ_ALL_ERRORS)) == 0) {
+		dev_warn(tvcap->dev, "No interrupts enabled, irq_en=0x%08x\n", irq_en_reg);
+	}
+
+	/* Verify register access integrity */
+	tvtop_write(tvcap, TVTOP_RESOLUTION_REG, test_pattern);
+	if (tvtop_read(tvcap, TVTOP_RESOLUTION_REG) != test_pattern) {
+		dev_err(tvcap->dev, "Register access integrity check failed\n");
+		tvtop_write(tvcap, TVTOP_RESOLUTION_REG, 0); /* Clear */
+		return -EIO;
+	}
+	tvtop_write(tvcap, TVTOP_RESOLUTION_REG, 0); /* Clear test pattern */
+
+	/* Check for any hardware error conditions */
+	if (status_reg & TVTOP_STATUS_ERROR) {
+		dev_err(tvcap->dev, "Hardware error detected during verification, status=0x%08x\n",
+			status_reg);
+		return -EIO;
+	}
+
+	/* Verify DMA subsystem readiness */
+	if (status_reg & TVTOP_STATUS_DMA_BUSY) {
+		dev_warn(tvcap->dev, "DMA busy during initialization verification\n");
+	}
+
+	dev_info(tvcap->dev, "Hardware initialization verification: all checks passed\n");
+	return 0;
 }
 
 static int tvcap_init_v4l2(struct sunxi_tvcap_dev *tvcap)
@@ -1455,4 +1669,91 @@ static u32 tvtop_read_and_clear_interrupts(struct sunxi_tvcap_dev *tvcap)
 	}
 	return status;
 }
+
+/**
+ * tvtop_init_hardware - Comprehensive TVTOP hardware initialization
+ * @tvcap: TV capture device context
+ *
+ * Performs complete TVTOP subsystem initialization including:
+ * - Hardware reset sequence
+ * - Clock and power configuration  
+ * - Register initialization to factory defaults
+ * - HDMI interface setup
+ * - Interrupt system configuration
+ *
+ * Based on factory firmware analysis from Task 022.
+ *
+ * Returns: 0 on success, negative error code on failure
+ */
+static int tvtop_init_hardware(struct sunxi_tvcap_dev *tvcap)
+{
+	u32 version_reg, ctrl_reg;
+	int ret;
+
+	dev_info(tvcap->dev, "Initializing TVTOP hardware interface\n");
+
+	/* Step 1: Perform software reset to ensure clean state */
+	ret = tvtop_software_reset(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "TVTOP software reset failed: %d\n", ret);
+		return ret;
+	}
+
+	/* Step 2: Verify hardware presence and version */
+	version_reg = tvtop_read(tvcap, TVTOP_DEBUG_REG);
+	dev_info(tvcap->dev, "TVTOP hardware version: 0x%08x\n", version_reg);
+
+	/* Step 3: Initialize clock control registers */
+	tvtop_write(tvcap, TVTOP_CLK_CTRL_REG, 0x00000001); /* Enable core clocks */
+	
+	/* Step 4: Configure reset control registers */
+	tvtop_write(tvcap, TVTOP_RST_CTRL_REG, 0x00000000); /* Release internal resets */
+	
+	/* Step 5: Initialize control register with safe defaults */
+	ctrl_reg = TVTOP_CTRL_ENABLE | TVTOP_CTRL_AUTO_FORMAT;
+	tvtop_write(tvcap, TVTOP_CTRL_REG, ctrl_reg);
+
+	/* Step 6: Configure default capture parameters */
+	tvtop_write(tvcap, TVTOP_FORMAT_REG, 0x04); /* Default to YUYV format */
+	tvtop_write(tvcap, TVTOP_RESOLUTION_REG, 0x04380780); /* Default 1920x1080 */
+	tvtop_write(tvcap, TVTOP_CAPTURE_SIZE_REG, 0x04380780); /* Match resolution */
+
+	/* Step 7: Initialize DMA control registers */
+	tvtop_write(tvcap, TVTOP_DMA_CTRL_REG, 0x00000000); /* DMA disabled initially */
+	tvtop_write(tvcap, TVTOP_DMA_ADDR_REG, 0x00000000); /* Clear DMA address */
+	tvtop_write(tvcap, TVTOP_DMA_SIZE_REG, 0x00000000); /* Clear DMA size */
+
+	/* Step 8: Configure HDMI interface */
+	tvtop_write(tvcap, TVTOP_HDMI_CTRL_REG, TVTOP_HDMI_HPD_ENABLE);
+	
+	/* Step 9: Clear all pending interrupts */
+	tvtop_write(tvcap, TVTOP_IRQ_STATUS_REG, 0xFFFFFFFF);
+	
+	/* Step 10: Configure interrupt mask - enable essential interrupts */
+	tvtop_write(tvcap, TVTOP_IRQ_EN_REG, TVTOP_IRQ_ALL_EVENTS | TVTOP_IRQ_ALL_ERRORS);
+	tvtop_write(tvcap, TVTOP_IRQ_MASK_REG, 0x00000000); /* Unmask all enabled interrupts */
+
+	/* Step 11: Enable TVTOP subsystem */
+	ret = tvtop_enable_subsystem(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "TVTOP subsystem enable failed: %d\n", ret);
+		return ret;
+	}
+
+	/* Step 12: Verify hardware is responsive */
+	ret = tvtop_wait_for_ready(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "TVTOP hardware not ready after init: %d\n", ret);
+		return ret;
+	}
+
+	/* Step 13: Final status check and mark as initialized */
+	ctrl_reg = tvtop_read(tvcap, TVTOP_CTRL_REG);
+	tvcap->tvtop_initialized = true;
+	dev_info(tvcap->dev, "TVTOP initialized successfully, CTRL=0x%08x\n", ctrl_reg);
+
+	return 0;
+}
+
+
 
