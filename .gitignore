@@ -32,6 +32,8 @@ SPL
 
 # Kernel build artifacts
 linux/
+linux-*/
+*.tar.xz
 arch/*/boot/
 vmlinux
 System.map
@@ -41,6 +43,8 @@ modules.order
 *.ko
 *.o
 *.cmd
+*.orig
+*.mod
 .tmp_versions/
 
 # Cross-compilation artifacts

@@ -129,10 +129,11 @@
 
 		/*
 		 * MIPS co-processor firmware and working memory
-		 * Factory configuration: 0x4b100000 size 0x2841000 (~40.3MB)
+		 * Exact 40MB allocation based on factory memory layout analysis
 		 */
 		mips_reserved: mipsloader@4b100000 {
-			reg = <0x0 0x4b100000 0x0 0x2841000>;
+			compatible = "shared-dma-pool";
+			reg = <0x0 0x4b100000 0x0 0x2800000>; /* 40MB */
 			no-map;
 		};
 
@@ -440,22 +441,25 @@
 		/*
 		 * MIPS Co-processor Loader
 		 * Critical component for display subsystem
-		 * Factory configuration: register base 0x3061000, memory region referenced
+		 * Factory configuration: register base 0x3061000
+		 * Memory layout: 40MB region for firmware, config, and frame buffers
 		 */
 		mipsloader: mipsloader@3061000 {
 			compatible = "allwinner,sun50i-h713-mipsloader",
 				     "allwinner,sunxi-mipsloader";
-			reg = <0x03061000 0x100>;
+			reg = <0x03061000 0x1000>;
 			memory-region = <&mips_reserved>;
-			clocks = <&ccu 10>, <&ccu 11>; /* CLK_MBUS, CLK_DRAM */
-			clock-names = "bus-clk", "mips-clk";
+			interrupts = <0 90 4>; /* GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH */
+			clocks = <&ccu 10>; /* CLK_MBUS */
+			clock-names = "mips";
 			resets = <&ccu 5>; /* RST_MBUS */
-			reset-names = "bus-reset";
+			reset-names = "mips";
 			status = "okay";
 
 			/*
 			 * MIPS firmware loading interface
-			 * Requires display.bin firmware file
+			 * Requires display.bin firmware file (1.25MB)
+			 * Factory CRC32: 0xe0376895
 			 */
 			firmware-name = "display.bin";
 		};
