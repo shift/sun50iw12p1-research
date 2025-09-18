@@ -487,6 +487,18 @@
 		};
 
 		/*
+		 * CPU Communication Interface
+		 * High-level ARM-MIPS communication for HDMI control
+		 */
+		cpu_comm: cpu_comm {
+			compatible = "allwinner,sunxi-cpu-comm";
+			mips-loader = <&mipsloader>;
+			nsi-interface = <&nsi>;
+			shared-memory = <&mips_reserved>;
+			status = "okay";
+		};
+
+		/*
 		 * RTC and Power Management IC
 		 * H6-compatible RTC
 		 */

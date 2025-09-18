@@ -37,6 +37,16 @@ config SUNXI_NSI
 	  for ARM-MIPS communication in H713 SoC. Provides shared memory
 	  management and interrupt-driven command/response protocol.
 
+config SUNXI_CPU_COMM
+	tristate "Allwinner CPU Communication Interface"
+	depends on ARCH_SUNXI && SUNXI_NSI
+	select CRC32
+	help
+	  Support for Allwinner CPU Communication Interface driver
+	  for ARM-MIPS high-level communication in H713 SoC. Provides
+	  HDMI input control, EDID reading, format negotiation, and
+	  capture buffer management through MIPS co-processor.
+
 config HY300_KEYSTONE_MOTOR
 	tristate "HY300 Keystone Motor Control"
 	depends on ARCH_SUNXI
