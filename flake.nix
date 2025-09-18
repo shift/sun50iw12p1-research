@@ -11,17 +11,6 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         
-        # Custom sunxi-tools package with latest features
-        sunxi-tools = pkgs.sunxi-tools.overrideAttrs (oldAttrs: {
-          version = "unstable-2024-09-01";
-          src = pkgs.fetchFromGitHub {
-            owner = "linux-sunxi";
-            repo = "sunxi-tools";
-            rev = "f03f965e6c06a75ae0d5da6e6a6b07e64c50c625";
-            sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-          };
-        });
-
         # ARM64 cross-compilation toolchain
         aarch64-toolchain = pkgs.pkgsCross.aarch64-multiplatform.buildPackages;
 
@@ -56,14 +45,12 @@
             binwalk
             hexdump
             file
-            strings
-            objdump
-            readelf
+            binutils  # includes strings, objdump, readelf
             
             # Image manipulation tools
-            mtd_utils
+            mtdutils
             android-tools  # For Android image analysis
-            squashfs-tools
+            squashfsTools
             e2fsprogs
             
             # Network and download tools
@@ -107,7 +94,7 @@
             export KBUILD_BUILD_USER=developer
             
             # Add custom paths
-            export PATH="${sunxi-tools}/bin:$PATH"
+            export PATH="${pkgs.sunxi-tools}/bin:$PATH"
             
             # Make tools easily accessible
             alias fel='sunxi-fel'
@@ -211,7 +198,7 @@
           
           # Verify sunxi-tools
           sunxi-tools-check = pkgs.runCommand "sunxi-tools-check" {
-            buildInputs = [ sunxi-tools ];
+            buildInputs = [ pkgs.sunxi-tools ];
           } ''
             sunxi-fel --version > $out || echo "sunxi-fel available" > $out
             echo "Sunxi tools check passed" >> $out
