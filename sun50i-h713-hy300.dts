@@ -242,8 +242,8 @@
 			compatible = "allwinner,sun50i-h6-dma";
 			reg = <0x03002000 0x1000>;
 			interrupts = <0 43 4>; /* GIC_SPI 43 IRQ_TYPE_LEVEL_HIGH */
-			clocks = <&ccu 1>, <&ccu 2>; /* CLK_BUS_DMA, CLK_MBUS_DMA */
-			clock-names = "bus", "mbus";
+			clocks = <&ccu 1>, <&ccu 2>, <&ccu 125>; /* CLK_BUS_DMA, CLK_MBUS_DMA, CLK_VINCAP_DMA */
+			clock-names = "bus", "mbus", "vincap";
 			resets = <&ccu 0>; /* RST_BUS_DMA */
 			#dma-cells = <1>;
 		};
@@ -546,6 +546,65 @@
 			#thermal-sensor-cells = <1>;
 		};
 
+		/*
+		 * TV Display System (tvdisp@5000000)
+		 * HDMI input display processing
+		 */
+		tvdisp: tvdisp@5000000 {
+			compatible = "allwinner,sunxi-tvsystem-iommu-dev";
+			reg = <0x05000000 0x1000>;
+			/* iommus = <&iommu 3 1>; */ /* Stream 0x03, Context 0x01 - TODO: Add IOMMU */
+			status = "okay";
+		};
+
+		/*
+		 * TV System Control Hub (tvtop@5700000)  
+		 * Primary TV capture and display control
+		 */
+		tvtop: tvtop@5700000 {
+			compatible = "allwinner,sunxi-tvtop";
+			reg = <0x05700000 0x100>,   /* TV TOP control registers */
+			      <0x06700000 0x100>,   /* TV secondary control */
+			      <0x06e00000 0x100>;   /* TV extended control */
+			
+			interrupts = <0 110 4>; /* GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH */
+			
+			/* Clock configuration - TV capture specific clocks */
+			clocks = <&ccu 134>,  /* CLK_BUS_DISP */
+				 <&ccu 130>,  /* CLK_BUS_TVCAP */ 
+				 <&ccu 123>,  /* CLK_BUS_DEMOD */
+				 <&ccu 124>,  /* CLK_CAP_300M */
+				 <&ccu 125>,  /* CLK_VINCAP_DMA */
+				 <&ccu 127>,  /* CLK_HDMI_AUDIO_BUS */
+				 <&ccu 128>;  /* CLK_HDMI_AUDIO */
+			clock-names = "clk_bus_disp", "clk_bus_tvcap", "clk_bus_demod",
+				      "cap_300m", "vincap_dma_clk", 
+				      "hdmi_audio_bus", "hdmi_audio_clk";
+			
+			/* Reset lines */
+			resets = <&ccu 57>,   /* RST_BUS_DISP */
+				 <&ccu 56>,   /* RST_BUS_TVCAP */
+				 <&ccu 55>;   /* RST_BUS_DEMOD */
+			reset-names = "reset_bus_disp", "reset_bus_tvcap", "reset_bus_demod";
+			
+			/* Power domain integration - TODO: Add power domains */
+			/* power-domains = <&power_domains 2>, <&power_domains 1>; */
+			/* power-domain-names = "pd_tvcap", "pd_tvfe"; */
+			
+			status = "okay";
+		};
+
+		/*
+		 * TV Capture Interface (tvcap@6800000)
+		 * HDMI input capture controller - CRITICAL FOR HDMI INPUT
+		 */
+		tvcap: tvcap@6800000 {
+			compatible = "allwinner,sunxi-tvsystem-iommu-dev";
+			reg = <0x06800000 0x1000>;
+			/* iommus = <&iommu 4 1>; */ /* Stream 0x04, Context 0x01 - TODO: Add IOMMU */
+			status = "okay";
+		};
+
 		/* PWM controller for fan speed */
 		pwm: pwm@300a000 {
 			compatible = "allwinner,sun50i-h6-pwm";
@@ -741,5 +800,31 @@
 		regulator-max-microvolt = <3300000>;
 		gpio = <&pio 1 5 0>;   /* PB5, GPIO_ACTIVE_HIGH */
 		enable-active-high;
+	};
+
+	/*
+	 * IR Receiver for Remote Control
+	 * Based on factory DTB analysis: s_cir@7040000 on GPIO PL9
+	 * Enables remote control input for Kodi navigation
+	 */
+	ir_receiver: ir@7040000 {
+		compatible = "allwinner,sun50i-a64-ir", "allwinner,sun6i-a31-ir";
+		reg = <0x0 0x7040000 0x0 0x400>;
+		clocks = <&r_ccu 0x04>, <&r_ccu 0x0b>;
+		clock-names = "apb", "ir";
+		resets = <&r_ccu 0x00>;
+		interrupts = <0x00 0x25 0x04>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&r_ir_rx_pin>;
+		status = "okay";
+		linux,rc-map-name = "rc-hy300";
+	};
+};
+
+/* IR receiver pin configuration - PL9 for IR input */
+&r_pio {
+	r_ir_rx_pin: r-ir-rx-pin {
+		pins = "PL9";
+		function = "s_cir_rx";
 	};
 };

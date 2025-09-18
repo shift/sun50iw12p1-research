@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+    HY300 Kodi Remote Control Keymap
+    Optimized for 10-foot UI navigation with D-pad remote
+    Ensures 100% remote-only accessibility
+-->
+<keymap>
+    <!-- Global key mappings - active in all contexts -->
+    <global>
+        <keyboard>
+            <!-- Core navigation keys -->
+            <up>Up</up>
+            <down>Down</down>
+            <left>Left</left>
+            <right>Right</right>
+            <return>Select</return>
+            <escape>Back</escape>
+            
+            <!-- System navigation -->
+            <key id="61478">ActivateWindow(Home)</key>           <!-- HOME key -->
+            <key id="61624">ContextMenu</key>                    <!-- MENU key -->
+            <key id="61640">ActivateWindow(TVChannels)</key>     <!-- SOURCE key -->
+            <key id="61641">Action(Info)</key>                   <!-- INFO key -->
+            
+            <!-- Volume control with OSD -->
+            <key id="61478">VolumeUp</key>                       <!-- VOL+ -->
+            <key id="61479">VolumeDown</key>                     <!-- VOL- -->
+            <key id="61487">Mute</key>                           <!-- MUTE -->
+            
+            <!-- Power management -->
+            <key id="61528">PowerDown</key>                      <!-- POWER key -->
+            <longpress>
+                <key id="61528">ActivateWindow(ShutdownMenu)</key> <!-- POWER long press -->
+            </longpress>
+            
+            <!-- Subtitle and audio track switching -->
+            <key id="61642">CycleSubtitle</key>                  <!-- SUBTITLE key -->
+            <key id="61643">AudioNextLanguage</key>              <!-- AUDIO key -->
+            
+            <!-- Color function keys for quick actions -->
+            <key id="61644">ActivateWindow(Favourites)</key>     <!-- RED key -->
+            <key id="61645">ActivateWindow(Settings)</key>       <!-- GREEN key -->
+            <key id="61646">ActivateWindow(FileManager)</key>    <!-- YELLOW key -->
+            <key id="61647">ToggleFullScreen</key>               <!-- BLUE key -->
+        </keyboard>
+    </global>
+    
+    <!-- Home screen specific mappings -->
+    <Home>
+        <keyboard>
+            <!-- Enhanced home screen navigation -->
+            <left>Left</left>
+            <right>Right</right>
+            <up>Up</up>
+            <down>Down</down>
+            
+            <!-- Quick access from home screen -->
+            <key id="61624">ActivateWindow(Settings)</key>       <!-- MENU -> Settings -->
+            <key id="61640">ActivateWindow(TVChannels)</key>     <!-- SOURCE -> Live TV -->
+            
+            <!-- Direct media access -->
+            <key id="61644">ActivateWindow(Videos)</key>         <!-- RED -> Movies -->
+            <key id="61645">ActivateWindow(Music)</key>          <!-- GREEN -> Music -->
+            <key id="61646">ActivateWindow(Pictures)</key>       <!-- YELLOW -> Pictures -->
+            <key id="61647">ActivateWindow(Programs)</key>       <!-- BLUE -> Add-ons -->
+        </keyboard>
+    </Home>
+    
+    <!-- Media library navigation -->
+    <MyVideoLibrary>
+        <keyboard>
+            <!-- Enhanced library navigation -->
+            <left>Left</left>
+            <right>Right</right>
+            <up>Up</up>
+            <down>Down</down>
+            
+            <!-- Library-specific functions -->
+            <key id="61624">ContextMenu</key>                    <!-- MENU -> Options -->
+            <key id="61641">Action(Info)</key>                   <!-- INFO -> Details -->
+            <key id="61644">ActivateWindow(VideoLibrary,Favourites)</key> <!-- RED -> Favourites -->
+            <key id="61645">Action(Filter)</key>                 <!-- GREEN -> Filter -->
+            <key id="61646">Action(Sort)</key>                   <!-- YELLOW -> Sort -->
+            <key id="61647">UpdateLibrary(video)</key>           <!-- BLUE -> Scan -->
+        </keyboard>
+    </MyVideoLibrary>
+    
+    <!-- Video playback controls -->
+    <VideoPlayer>
+        <keyboard>
+            <!-- Primary playback controls -->
+            <key id="61489">PlayPause</key>                      <!-- PLAY/PAUSE -->
+            <key id="61490">Stop</key>                           <!-- STOP -->
+            <key id="61491">PlayerControl(Forward)</key>         <!-- FAST FORWARD -->
+            <key id="61492">PlayerControl(Rewind)</key>          <!-- REWIND -->
+            
+            <!-- Enhanced navigation during playback -->
+            <up>VolumeUp</up>                                    <!-- UP -> Volume up -->
+            <down>VolumeDown</down>                              <!-- DOWN -> Volume down -->
+            <left>Seek(-30)</left>                               <!-- LEFT -> Seek back 30s -->
+            <right>Seek(30)</right>                              <!-- RIGHT -> Seek forward 30s -->
+            
+            <!-- Playback information and options -->
+            <key id="61624">PlayerProcessInfo</key>              <!-- MENU -> Player info -->
+            <key id="61641">CodecInfo</key>                      <!-- INFO -> Codec info -->
+            <key id="61642">CycleSubtitle</key>                  <!-- SUBTITLE toggle -->
+            <key id="61643">AudioNextLanguage</key>              <!-- AUDIO track -->
+            
+            <!-- Quick seek with color keys -->
+            <key id="61644">Seek(-600)</key>                     <!-- RED -> Back 10 min -->
+            <key id="61645">Seek(-60)</key>                      <!-- GREEN -> Back 1 min -->
+            <key id="61646">Seek(60)</key>                       <!-- YELLOW -> Forward 1 min -->
+            <key id="61647">Seek(600)</key>                      <!-- BLUE -> Forward 10 min -->
+            
+            <!-- Chapter navigation if available -->
+            <pageup>ChapterOrBigStepForward</pageup>
+            <pagedown>ChapterOrBigStepBack</pagedown>
+        </keyboard>
+    </VideoPlayer>
+    
+    <!-- Music playback controls -->
+    <MusicPlayer>
+        <keyboard>
+            <!-- Music playback controls -->
+            <key id="61489">PlayPause</key>                      <!-- PLAY/PAUSE -->
+            <key id="61490">Stop</key>                           <!-- STOP -->
+            <key id="61491">PlayerControl(Next)</key>            <!-- NEXT track -->
+            <key id="61492">PlayerControl(Previous)</key>        <!-- PREVIOUS track -->
+            
+            <!-- Music navigation -->
+            <up>VolumeUp</up>                                    <!-- UP -> Volume up -->
+            <down>VolumeDown</down>                              <!-- DOWN -> Volume down -->
+            <left>PlayerControl(Previous)</left>                 <!-- LEFT -> Previous -->
+            <right>PlayerControl(Next)</right>                   <!-- RIGHT -> Next -->
+            
+            <!-- Music-specific functions -->
+            <key id="61624">ActivateWindow(MusicOSD)</key>       <!-- MENU -> Music OSD -->
+            <key id="61641">Action(Info)</key>                   <!-- INFO -> Track info -->
+            <key id="61644">PlayerControl(Repeat)</key>          <!-- RED -> Repeat mode -->
+            <key id="61645">PlayerControl(Random)</key>          <!-- GREEN -> Shuffle -->
+            <key id="61646">ActivateWindow(Visualisation)</key>  <!-- YELLOW -> Visualizer -->
+            <key id="61647">ActivateWindow(MusicPlaylist)</key>  <!-- BLUE -> Playlist -->
+        </keyboard>
+    </MusicPlayer>
+    
+    <!-- Picture viewer controls -->
+    <MyPictures>
+        <keyboard>
+            <!-- Picture navigation -->
+            <left>Left</left>
+            <right>Right</right>
+            <up>Up</up>
+            <down>Down</down>
+            
+            <!-- Picture-specific controls -->
+            <key id="61489">Pause</key>                          <!-- PLAY -> Slideshow -->
+            <key id="61490">Stop</key>                           <!-- STOP -> Stop slideshow -->
+            <key id="61491">PictureRotate</key>                  <!-- FFWD -> Rotate -->
+            <key id="61492">PictureRotateCCW</key>               <!-- REW -> Rotate CCW -->
+            
+            <!-- Picture viewer functions -->
+            <key id="61624">ContextMenu</key>                    <!-- MENU -> Options -->
+            <key id="61641">Action(Info)</key>                   <!-- INFO -> Picture info -->
+            <key id="61644">ZoomIn</key>                         <!-- RED -> Zoom in -->
+            <key id="61645">ZoomOut</key>                        <!-- GREEN -> Zoom out -->
+            <key id="61646">ZoomNormal</key>                     <!-- YELLOW -> Zoom normal -->
+            <key id="61647">Move</key>                           <!-- BLUE -> Move mode -->
+        </keyboard>
+    </MyPictures>
+    
+    <!-- Virtual keyboard navigation -->
+    <VirtualKeyboard>
+        <keyboard>
+            <!-- Virtual keyboard navigation -->
+            <up>Up</up>
+            <down>Down</down>
+            <left>Left</left>
+            <right>Right</right>
+            <return>Select</return>
+            <escape>Close</escape>
+            
+            <!-- Special character access -->
+            <key id="61624">Action(showcodeinput)</key>          <!-- MENU -> Special chars -->
+            <key id="61644">Action(backspace)</key>              <!-- RED -> Backspace -->
+            <key id="61645">Action(shift)</key>                  <!-- GREEN -> Shift -->
+            <key id="61646">Action(symbols)</key>                <!-- YELLOW -> Symbols -->
+            <key id="61647">Action(done)</key>                   <!-- BLUE -> Done -->
+        </keyboard>
+    </VirtualKeyboard>
+    
+    <!-- Settings menu navigation -->
+    <Settings>
+        <keyboard>
+            <!-- Settings navigation -->
+            <up>Up</up>
+            <down>Down</down>
+            <left>Left</left>
+            <right>Right</right>
+            <return>Select</return>
+            <escape>Back</escape>
+            
+            <!-- Settings shortcuts -->
+            <key id="61624">ContextMenu</key>                    <!-- MENU -> Advanced -->
+            <key id="61644">ActivateWindow(SystemInfo)</key>     <!-- RED -> System info -->
+            <key id="61645">ActivateWindow(Settings,system)</key> <!-- GREEN -> System -->
+            <key id="61646">ActivateWindow(Settings,media)</key> <!-- YELLOW -> Media -->
+            <key id="61647">ActivateWindow(Settings,interface)</key> <!-- BLUE -> Interface -->
+        </keyboard>
+    </Settings>
+    
+    <!-- Live TV and PVR controls -->
+    <TVChannels>
+        <keyboard>
+            <!-- Channel navigation -->
+            <up>ChannelUp</up>                                   <!-- UP -> Channel up -->
+            <down>ChannelDown</down>                             <!-- DOWN -> Channel down -->
+            <left>Left</left>
+            <right>Right</right>
+            
+            <!-- TV-specific controls -->
+            <key id="61489">PlayPause</key>                      <!-- PLAY/PAUSE -->
+            <key id="61490">Stop</key>                           <!-- STOP -->
+            <key id="61491">ChannelUp</key>                      <!-- FFWD -> Channel up -->
+            <key id="61492">ChannelDown</key>                    <!-- REW -> Channel down -->
+            
+            <!-- TV functions -->
+            <key id="61624">ActivateWindow(TVGuide)</key>        <!-- MENU -> TV Guide -->
+            <key id="61641">Action(Info)</key>                   <!-- INFO -> Program info -->
+            <key id="61640">ActivateWindow(TVChannels)</key>     <!-- SOURCE -> Channel list -->
+            <key id="61642">CycleSubtitle</key>                  <!-- SUBTITLE -->
+            <key id="61643">AudioNextLanguage</key>              <!-- AUDIO track -->
+        </keyboard>
+    </TVChannels>
+    
+    <!-- Video information overlay -->
+    <VideoOSD>
+        <keyboard>
+            <!-- OSD navigation -->
+            <up>Up</up>
+            <down>Down</down>
+            <left>Left</left>
+            <right>Right</right>
+            <return>Select</return>
+            <escape>Close</escape>
+            
+            <!-- Quick OSD controls -->
+            <key id="61489">PlayPause</key>                      <!-- PLAY/PAUSE -->
+            <key id="61490">Stop</key>                           <!-- STOP -->
+            <key id="61624">Close</key>                          <!-- MENU -> Close OSD -->
+        </keyboard>
+    </VideoOSD>
+    
+    <!-- Context menu navigation -->
+    <ContextMenu>
+        <keyboard>
+            <!-- Context menu navigation -->
+            <up>Up</up>
+            <down>Down</down>
+            <left>Left</left>
+            <right>Right</right>
+            <return>Select</return>
+            <escape>Close</escape>
+            
+            <!-- Quick context actions -->
+            <key id="61624">Close</key>                          <!-- MENU -> Close -->
+        </keyboard>
+    </ContextMenu>
+    
+    <!-- Shutdown menu -->
+    <ShutdownMenu>
+        <keyboard>
+            <!-- Shutdown menu navigation -->
+            <up>Up</up>
+            <down>Down</down>
+            <left>Left</left>
+            <right>Right</right>
+            <return>Select</return>
+            <escape>Close</escape>
+            
+            <!-- Direct shutdown options -->
+            <key id="61528">Close</key>                          <!-- POWER -> Cancel -->
+            <key id="61644">Powerdown</key>                      <!-- RED -> Shutdown -->
+            <key id="61645">Suspend</key>                        <!-- GREEN -> Sleep -->
+            <key id="61646">Restart</key>                        <!-- YELLOW -> Restart -->
+            <key id="61647">Quit</key>                           <!-- BLUE -> Exit Kodi -->
+        </keyboard>
+    </ShutdownMenu>
+</keymap>
