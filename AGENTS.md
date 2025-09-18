@@ -108,6 +108,98 @@ ai/tools/task-manager validate
 - **Always use task-manager** for task status operations
 - **Create additional tools** as needed for specific workflows
 
+### Agent Delegation Protocol
+- **ATOMIC TASK DELEGATION**: Each delegation must be a single, atomic task to manage context limits effectively
+- **ONE TASK PER DELEGATION**: Never combine multiple tasks in a single agent delegation - break complex work into separate atomic delegations
+- **COMPLETE INITIAL CONTEXT**: All rules, standards, and required context files must be provided in the delegated agent's initial prompt
+- **SELF-CONTAINED DELEGATIONS**: Each delegated agent must receive everything needed to complete their atomic task independently - they have NO ACCESS to AGENTS.md, project files, or any context not explicitly provided in the prompt
+- **General agents act as coordinators**: The general agent should primarily delegate tasks to specialized agents rather than performing implementation work directly
+- **Use Task tool for atomic operations**: When single-step tasks or specialized knowledge is required, use the Task tool to launch appropriate specialized agents
+- **Examples of atomic delegation scenarios**:
+  - Search for specific driver references → single research delegation with project context and search criteria
+  - Analyze one firmware component → single analysis delegation with component file and analysis framework
+  - Implement one specific function → single development delegation with coding standards and requirements
+  - Update one documentation file → single coordination task with update requirements and cross-reference rules
+- **General agent focuses on**: task coordination, documentation updates, high-level planning, and orchestrating work between multiple atomic specialized agent delegations
+- **Reserve direct implementation for**: simple file edits, single-step operations, immediate responses to user questions
+- **Context Management**: Each atomic delegation prevents context overflow and ensures focused, high-quality results
+
+#### Required Delegation Context
+When delegating atomic tasks, always include in the initial prompt:
+1. **Project Overview**: Brief description of HY300 Linux porting project and current phase
+2. **Specific Task**: Clear, atomic task definition with success criteria
+3. **Technical Standards**: Relevant coding standards, documentation requirements, and quality guidelines
+4. **File Context**: Any files the agent needs to read or modify, with specific paths
+5. **Safety Protocols**: Hardware safety rules, git commit requirements, testing procedures
+6. **Validation Requirements**: How to verify task completion and what deliverables are expected
+7. **Cross-References**: Related documentation that must be updated or referenced
+8. **Tool Usage**: Specific tools or commands required for the task
+9. **Environment Context**: Nix development environment requirements if applicable
+10. **Integration Points**: How this atomic task fits into the larger work stream
+
+#### Critical File Editing Rules for Delegated Agents
+**MANDATORY for all delegated agents:**
+- **NEVER use Edit tool on .c files** - C files must use patch-based editing due to length limitations
+- **Create patches instead** - Use bash commands to create patch files for C file modifications
+- **Test compilation** - Always verify changes compile successfully before completion
+- **Document changes** - Include clear descriptions of what the patches accomplish
+
+#### Context Content Inclusion Strategy
+**COPY RELEVANT CONTEXT DIRECTLY INTO PROMPT** - do not reference files the agent should read:
+- **Extract and include** relevant sections from context files directly in the delegation prompt
+- **Provide specific rules and standards** inline rather than referencing external files
+- **Include file paths and examples** directly in the prompt text
+- **Copy command examples** and validation procedures into the prompt
+- **Never assume** the delegated agent can read any project files not explicitly provided
+
+#### Example Delegation Prompt Template
+```
+You are a specialized agent working on the HY300 Linux porting project. 
+
+**PROJECT CONTEXT:**
+This is a hardware porting project to run mainline Linux on the HY300 Android projector with Allwinner H713 SoC. Current phase: Phase V Driver Integration Research.
+
+**CODING STANDARDS:**
+- NEVER mock, stub, or simulate code - implement complete solutions
+- **CRITICAL: C FILES MUST USE PATCH-BASED EDITING** - Never use Edit tool on .c files, always create patches due to file length limitations
+- Always run available tests before completion
+- Follow existing codebase conventions
+
+**GIT REQUIREMENTS:**
+- Commit all changes with format: [Task ###] Brief description
+- Reference task numbers in commit messages
+- Never commit binaries (*.img, *.bin files)
+- Always include cross-reference updates in commits
+
+**ENVIRONMENT:**
+- Verify Nix environment with: echo $IN_NIX_SHELL
+- Use: nix develop -c -- <command> if not in devShell
+- Required tools: aarch64-unknown-linux-gnu-*, dtc, binwalk
+
+**ATOMIC TASK:**
+[Single, specific task description with clear success criteria]
+
+**DELIVERABLES EXPECTED:**
+- [Specific files to create/modify with full paths]
+- [Documentation updates required with cross-references]
+- [Git commits with proper task references]
+
+**VALIDATION REQUIRED:**
+[Specific steps to verify task completion]
+
+Complete this atomic task following all standards above.
+```
+
+#### Post-Delegation Verification Protocol
+After each atomic task delegation, the coordinating agent MUST:
+1. **Verify task completion status**: Check that the delegated agent completed successfully without errors or context limits
+2. **Validate deliverables**: Ensure all expected outputs (files, documentation, analysis) were produced
+3. **Check git commits**: Verify that any file changes were properly committed with appropriate messages
+4. **Update task status**: Use `ai/tools/task-manager` to update task progress if the delegated agent didn't
+5. **Document results**: Synthesize agent results into project documentation if not completed
+6. **Prepare next delegation**: Only proceed to next atomic task after verifying current delegation completed cleanly
+7. **Handle incomplete delegations**: If agent hit context limits or errors, complete remaining work before next delegation
+
 ## Agent Workflow Rules
 ### 1. Task Continuity (CRITICAL)
 **Always check for in-progress tasks first using the task-manager tool:**
@@ -166,6 +258,7 @@ nix develop -c -- <command>
 - Always commit documentation and code changes
 - Reference task numbers in commit messages
 - Never commit binaries or test scripts unless part of testing framework
+- **C file editing**: Use patch-based approach for large C files to avoid edit tool limitations
 
 ### 6. Hardware Safety Protocol
 **Always follow safe development practices:**
@@ -268,6 +361,7 @@ nix develop -c -- <command>
 - Implement complete, working solutions
 - Include comprehensive error handling
 - Document complex technical decisions
+- **CRITICAL: C files MUST use patch-based editing** - Never use Edit tool on .c files due to length limitations
 
 ### Testing Requirements
 - Run all available tests before task completion
@@ -287,6 +381,7 @@ nix develop -c -- <command>
 - Maintain technical accuracy in all documentation
 - Include implementation details for future reference
 - Document known issues and workarounds
+- **C code changes**: When modifying C files, document changes in patch format for clarity and reviewability
 
 ## Emergency Procedures
 
@@ -380,12 +475,18 @@ nix develop -c -- <command>
 
 **During task execution:**
 - Follow no-shortcuts policy strictly
+- **Delegate atomic tasks to specialized agents** using the Task tool rather than implementing directly
+- **Each delegation must be single, atomic task** to manage context limits effectively
+- **Include complete context directly in delegation prompts**: Copy all necessary rules, standards, and requirements into the prompt text - delegated agents cannot access project files
+- **Verify each delegation completes cleanly** before proceeding to next atomic task
+- **Complete any unfinished work** from delegated agents (commits, task updates, documentation)
 - Update task status using `ai/tools/task-manager start/complete/block` commands
 - Update task progress directly in task files
 - Validate each step before proceeding
 - Maintain hardware safety protocols
 - Document research findings as they're discovered
 - Cross-reference new information with existing documentation
+- **Act as coordinator**: orchestrate work between multiple atomic specialized agent delegations for complex multi-phase tasks
 
 **When completing phases/milestones:**
 - Update all primary documentation (README.md, PROJECT_OVERVIEW.md, instructions)
@@ -402,11 +503,19 @@ nix develop -c -- <command>
 - Commit all changes with clear messages referencing task numbers
 
 **Research and Analysis Protocol:**
+- **Delegate atomic research tasks to specialized agents** for focused analysis with context limit management
+- Use Task tool to launch research agents for single, atomic tasks: individual firmware analysis, specific driver research, or targeted external resource discovery
+- **ONE ATOMIC TASK PER DELEGATION**: Never combine multiple research areas in a single delegation
+- **Copy relevant context directly into delegation prompts**: Extract and include needed information from context files directly in the prompt - delegated agents cannot read project files
+- **Verify each research delegation completes successfully** before proceeding to next atomic delegation
+- **Complete any unfinished research work** (documentation updates, file commits, task status) if delegated agent didn't finish cleanly
+- **Coordinate multiple atomic research delegations** for comprehensive analysis across different specialized agents
 - Maximize software analysis before requiring hardware access
-- Extract comprehensive information from factory firmware components
-- Research external resources and community implementations
+- Extract comprehensive information from factory firmware components through focused atomic delegations
+- Research external resources and community implementations via targeted single-focus delegations
 - Document integration patterns and requirements thoroughly
 - Create roadmaps that minimize hardware testing iterations
+- **General agent synthesizes results** from multiple atomic specialized research agent delegations into project documentation
 
 This project requires precision, patience, and methodical progress. Quality and completeness are more important than speed.
 
