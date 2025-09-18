@@ -165,6 +165,12 @@ This is a hardware porting project to run mainline Linux on the HY300 Android pr
 - Always run available tests before completion
 - Follow existing codebase conventions
 
+**MANDATORY C FILE EDITING RULES:**
+- **NEVER use Edit tool on any .c files** - they are too large and will cause errors
+- **ALWAYS create patches instead** - use bash commands like: diff -u original.c modified.c > changes.patch
+- **Test compilation after changes** - verify your modifications compile successfully
+- **Document what your patches do** - include clear descriptions of the changes
+
 **GIT REQUIREMENTS:**
 - Commit all changes with format: [Task ###] Brief description
 - Reference task numbers in commit messages
