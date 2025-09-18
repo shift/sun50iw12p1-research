@@ -377,20 +377,27 @@
 			#size-cells = <0>;
 
 			/*
-			 * Accelerometer sensors for auto-keystone correction
-			 * Factory DTB shows two different accelerometer models
+			 * Accelerometer sensors for keystone correction
+			 * Factory DTB shows two different accelerometer models with interrupt GPIOs
 			 */
 			accelerometer1: stk8ba58@18 {
 				compatible = "sensortek,stk8ba58";
 				reg = <0x18>;
+				interrupt-parent = <&pio>;
+				interrupts = <1 0 2>; /* PB0, IRQ_TYPE_EDGE_FALLING */
+				stk,direction = <2>;
+			};
+
+			/* Alternative accelerometer - different I2C address from factory analysis */
+			accelerometer2: kxtj3@e {
+				compatible = "kionix,kxtj3-1057";
+				reg = <0x0e>; /* Factory DTB uses 0x0e, not 0x18 */
+				interrupt-parent = <&pio>;
+				interrupts = <1 0 2>; /* PB0, IRQ_TYPE_EDGE_FALLING */
+				status = "disabled"; /* Enable based on hardware detection */
 			};
 
 			/* Alternative accelerometer - may be different hardware revisions */
-			accelerometer2: kxtj3@18 {
-				compatible = "kionix,kxtj3-1057";
-				reg = <0x18>;
-				status = "disabled"; /* Enable based on hardware detection */
-			};
 		};
 
 		/*
