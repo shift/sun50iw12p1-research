@@ -1,0 +1,158 @@
+=== HY300 Projector Development Environment ===
+Cross-compile toolchain: aarch64-unknown-linux-gnu-
+Target architecture: arm64
+Sunxi tools available: sunxi-fel, sunxi-fexc, etc.
+
+Key tools installed:
+- Cross-compilation: aarch64-unknown-linux-gnu-gcc
+- Sunxi tools: sunxi-fel, sunxi-fexc
+- Firmware analysis: binwalk, hexdump, strings
+- Serial console: minicom, picocom
+- Device tree: dtc
+
+ROM analysis workflow:
+1. Extract firmware: binwalk -e firmware.img
+2. FEL access: sunxi-fel version
+3. Backup eMMC: sunxi-fel read 0x0 0x1000000 backup.img
+
+--- sunxi-tvcap.c.original
++++ sunxi-tvcap.c.enhanced
+@@ -109,6 +109,23 @@
+                                  TVTOP_IRQ_FIFO_ERROR | TVTOP_IRQ_TIMEOUT)
+ #define TVTOP_IRQ_ALL_MASK      (TVTOP_IRQ_ALL_ERRORS | TVTOP_IRQ_ALL_EVENTS)
+ 
++/* IRQ 110 Shared Interrupt Enhancement - Task 022 specifications */
++#define TVTOP_IRQ_PRIORITY_MASK    0x0300   /* Priority control bits */
++#define TVTOP_IRQ_PRIORITY_HIGH    0x0100   /* High priority for TV capture */
++#define TVTOP_IRQ_SOURCE_DETECT_REG  0x0044  /* Source detection register */
++#define TVTOP_IRQ_TVCAP_SOURCE    BIT(0)     /* TV capture interrupt source */
++#define TVTOP_IRQ_DECODER_SOURCE  BIT(1)     /* Decoder subsystem source */
++#define TVTOP_IRQ_DISPLAY_SOURCE  BIT(2)     /* Display subsystem source */
++
++/* Interrupt statistics and error recovery */
++struct tvcap_irq_stats {
++	u32 total_interrupts;
++	u32 handled_interrupts;
++	u32 spurious_interrupts;
++	u32 error_interrupts;
++	u32 recovery_attempts;
++	unsigned long last_interrupt_jiffies;
++};
++
+ /* TV Capture Status Flags */
+ #define TVTOP_STATUS_HDMI_CONNECTED BIT(0)
+ #define TVTOP_STATUS_SIGNAL_DETECTED BIT(1)
+@@ -214,6 +231,9 @@ struct sunxi_tvcap_dev {
+ 	/* Buffer management */
+ 	struct list_head buf_list;
+ 	u32 sequence;
++
++	/* IRQ 110 shared interrupt enhancement */
++	struct tvcap_irq_stats irq_stats;
+ };
+ 
+ /* Buffer structure */
+@@ -700,21 +720,50 @@ static void tvcap_handle_errors(struct sunxi_tvcap_dev *tvcap, u32 error_status
+ static irqreturn_t tvcap_irq_handler(int irq, void *dev_id)
+ {
+ 	struct sunxi_tvcap_dev *tvcap = dev_id;
+-	u32 status, error_status;
++	u32 status, error_status, source_detect;
+ 	irqreturn_t ret = IRQ_NONE;
+ 	
+ 	spin_lock(&tvcap->irq_lock);
+ 	
+-	status = tvtop_read_and_clear_interrupts(tvcap);
++	/* Enhanced shared IRQ 110 detection - check if it's our interrupt first */
++	source_detect = tvtop_read(tvcap, TVTOP_IRQ_SOURCE_DETECT_REG);
++	if (!(source_detect & TVTOP_IRQ_TVCAP_SOURCE)) {
++		/* Not our interrupt - decoder or display subsystem */
++		tvcap->irq_stats.spurious_interrupts++;
++		spin_unlock(&tvcap->irq_lock);
++		return IRQ_NONE;  /* Not our interrupt - let other drivers handle */
++	}
++	
++	status = tvtop_read_and_clear_interrupts(tvcap);
+ 	if (!status) {
++		/* Race condition - interrupt was handled by another driver */
+ 		spin_unlock(&tvcap->irq_lock);
+-		return ret;
++		return IRQ_NONE;
+ 	}
+ 	
++	/* Update interrupt statistics */
++	tvcap->irq_stats.total_interrupts++;
++	tvcap->irq_stats.last_interrupt_jiffies = jiffies;
++	
++	if (status) {
++		tvcap->irq_stats.handled_interrupts++;
++		if (status & TVTOP_IRQ_ALL_ERRORS) {
++			tvcap->irq_stats.error_interrupts++;
++		}
++	}
++	
+ 	ret = IRQ_HANDLED;
+ 	
+-	dev_dbg(tvcap->dev, "TV capture interrupt: 0x%08x\n", status);
++	dev_dbg(tvcap->dev, "IRQ 110 TV capture: status=0x%08x, stats: total=%u, handled=%u, spurious=%u\n",
++		status, tvcap->irq_stats.total_interrupts,
++		tvcap->irq_stats.handled_interrupts, tvcap->irq_stats.spurious_interrupts);
+ 	
++	/* Handle interrupts in priority order for shared IRQ 110 */
++	
++	/* Priority 1: Error conditions (highest priority) */
++	error_status = status & TVTOP_IRQ_ALL_ERRORS;
++	if (error_status) {
++		tvcap_handle_errors(tvcap, error_status);
++	}
++	
++	/* Priority 2: Frame completion (time-critical) */
+ 	/* Handle frame completion */
+ 	if (status & TVTOP_IRQ_FRAME_DONE) {
+ 		tvcap_handle_frame_done(tvcap);
+ 	}
+ 	
++	/* Priority 3: Input changes */
+ 	/* Handle input changes */
+ 	if (status & (TVTOP_IRQ_INPUT_CHANGE | TVTOP_IRQ_HDMI_HOTPLUG)) {
+ 		tvcap_handle_input_change(tvcap);
+ 	}
+ 	
++	/* Priority 4: Format changes */
+ 	/* Handle format changes */
+ 	if (status & TVTOP_IRQ_FORMAT_CHANGE) {
+ 		tvcap_handle_format_change(tvcap);
+ 	}
+ 	
+-	/* Handle error conditions */
+-	error_status = status & TVTOP_IRQ_ALL_ERRORS;
+-	if (error_status) {
+-		tvcap_handle_errors(tvcap, error_status);
+-	}
+-	
+ 	spin_unlock(&tvcap->irq_lock);
+ 	return ret;
+ }
+@@ -1009,7 +1058,7 @@ static int tvcap_init_resources(struct sunxi_tvcap_dev *tvcap)
+ 	
+ 	/* Request interrupt */
+ 	ret = devm_request_irq(dev, tvcap->irq, tvcap_irq_handler, 
+-			       IRQF_SHARED, SUNXI_TVCAP_NAME, tvcap);
++			       IRQF_SHARED | IRQF_TRIGGER_HIGH, SUNXI_TVCAP_NAME, tvcap);
+ 	if (ret) {
+ 		dev_err(dev, "Failed to request interrupt: %d\n", ret);
+ 		return ret;
+@@ -1130,6 +1179,13 @@ static int sunxi_tvcap_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 	
++	/* Setup IRQ 110 shared interrupt priority and initialize statistics */
++	dev_info(&pdev->dev, "Setting up IRQ 110 shared interrupt priority\n");
++	tvtop_update_bits(tvcap, TVTOP_IRQ_EN_REG, TVTOP_IRQ_PRIORITY_MASK, TVTOP_IRQ_PRIORITY_HIGH);
++	
++	/* Initialize interrupt statistics */
++	memset(&tvcap->irq_stats, 0, sizeof(tvcap->irq_stats));
++	
+ 	/* Initialize V4L2 subsystem */
+ 	ret = tvcap_init_v4l2(tvcap);
+ 	if (ret)
