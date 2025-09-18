@@ -78,9 +78,9 @@ serial_output.txt
 test_*.sh
 quick_test.py
 
-# Device-specific generated files
-sun50i-h713-hy300.dts
+# Device-specific generated files (allow main deliverables)
 hy300_h713_defconfig
+!sun50i-h713-hy300.dts  # Allow main device tree deliverable
 
 # Analysis output
 binwalk_output/
