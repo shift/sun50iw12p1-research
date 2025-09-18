@@ -49,7 +49,7 @@
 
 | Component | Status | Driver Compatibility | Notes |
 |-----------|--------|---------------------|-------|
-| **WiFi Module** | 🔄 Basic | aicsemi,aic8800 | **Phase V**: Requires proprietary driver integration |
+| **WiFi Module** | 🔄 Basic | aicsemi,aic8800 | **Phase V**: Requires proprietary driver integration<br/>**Driver References:**<br/>• https://github.com/geniuskidkanyi/aic8800<br/>• https://github.com/radxa-pkg/aic8800<br/>• https://github.com/goecho/aic8800_linux_drvier |
 
 ## Memory Map Configuration
 
