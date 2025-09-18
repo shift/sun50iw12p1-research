@@ -46,4 +46,4 @@ Each task file should follow this format:
 
 ## Current Task Counter
 
-Next task number: 005
+Next task number: 008
