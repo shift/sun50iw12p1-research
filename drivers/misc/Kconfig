@@ -1,0 +1,46 @@
+=== HY300 Projector Development Environment ===
+Cross-compile toolchain: aarch64-unknown-linux-gnu-
+Target architecture: arm64
+Sunxi tools available: sunxi-fel, sunxi-fexc, etc.
+
+Key tools installed:
+- Cross-compilation: aarch64-unknown-linux-gnu-gcc
+- Sunxi tools: sunxi-fel, sunxi-fexc
+- Firmware analysis: binwalk, hexdump, strings
+- Serial console: minicom, picocom
+- Device tree: dtc
+
+ROM analysis workflow:
+1. Extract firmware: binwalk -e firmware.img
+2. FEL access: sunxi-fel version
+3. Backup eMMC: sunxi-fel read 0x0 0x1000000 backup.img
+
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# HY300 Projector Misc Drivers
+#
+
+config SUNXI_MIPSLOADER
+	tristate "Allwinner MIPS Co-processor Loader"
+	depends on ARCH_SUNXI
+	help
+	  Support for Allwinner MIPS co-processor loader driver
+	  for H713 SoC. The MIPS co-processor handles display
+	  engine control and projector-specific hardware management.
+
+config SUNXI_NSI
+	tristate "Allwinner Network Service Interface"
+	depends on ARCH_SUNXI
+	select CRC32
+	help
+	  Support for Allwinner Network Service Interface (NSI) driver
+	  for ARM-MIPS communication in H713 SoC. Provides shared memory
+	  management and interrupt-driven command/response protocol.
+
+config HY300_KEYSTONE_MOTOR
+	tristate "HY300 Keystone Motor Control"
+	depends on ARCH_SUNXI
+	help
+	  Support for HY300 projector keystone motor control.
+	  Provides hardware interface for projector lens adjustment
+	  and automatic keystone correction.

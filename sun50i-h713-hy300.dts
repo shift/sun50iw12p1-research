@@ -472,6 +472,21 @@
 		};
 
 		/*
+		 * Network Service Interface (NSI)
+		 * ARM-MIPS communication interface with IRQ 110
+		 */
+		nsi: nsi@3062000 {
+			compatible = "allwinner,sun50i-h713-nsi", "allwinner,sunxi-nsi";
+			reg = <0x03062000 0x1000>;
+			interrupts = <0 110 4>; /* GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH */
+			memory-region = <&mips_reserved>;
+			clocks = <&ccu 10>, <&ccu 10>; /* CLK_MBUS */
+			clock-names = "bus", "mips";
+			resets = <&ccu 5>; /* RST_MBUS */
+			status = "okay";
+		};
+
+		/*
 		 * RTC and Power Management IC
 		 * H6-compatible RTC
 		 */
