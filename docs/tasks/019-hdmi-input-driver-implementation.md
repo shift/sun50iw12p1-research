@@ -50,7 +50,7 @@ Implement the V4L2 TV capture driver (`sunxi-tvcap`) for HDMI input functionalit
 - [x] **2.2**: Add TV capture clock management (7 clocks from Task 022)
 - [x] **2.3**: Implement reset line control (3 reset lines from Task 022)
 - [x] **2.4**: Add interrupt handling for IRQ 110 (shared interrupt)
-- [ ] **2.5**: Implement basic hardware initialization sequence
+- [x] **2.5**: Implement basic hardware initialization sequence
 
 ### 3. MIPS Co-processor Integration
 **Objective**: Implement ARM-MIPS communication for TV capture coordination
@@ -72,11 +72,11 @@ Implement the V4L2 TV capture driver (`sunxi-tvcap`) for HDMI input functionalit
 **Objective**: Implement video capture pipeline with V4L2 API
 **Status**: ⚠️ **LIMITED** - Missing display pipeline components
 **Atomic Tasks**:
-- [ ] **4.1**: Implement videobuf2 queue management for capture buffers
-- [ ] **4.2**: Add video format enumeration and negotiation
-- [ ] **4.3**: Implement stream start/stop operations (`VIDIOC_STREAMON/OFF`)
-- [ ] **4.4**: Add buffer queueing and dequeuing operations
-- [ ] **4.5**: Implement frame capture completion and timestamping
+- [x] **4.1**: Implement videobuf2 queue management for capture buffers
+- [x] **4.2**: Add video format enumeration and negotiation
+- [x] **4.3**: Implement stream start/stop operations (`VIDIOC_STREAMON/OFF`)
+- [x] **4.4**: Add buffer queueing and dequeuing operations
+- [x] **4.5**: Implement frame capture completion and timestamping
 
 **Research Finding**: Display output functionality requires missing drivers:
 - **SUNXI_TVUTILS** - Video processing and format conversion
@@ -88,20 +88,20 @@ Implement the V4L2 TV capture driver (`sunxi-tvcap`) for HDMI input functionalit
 ### 5. Input Management and Format Detection
 **Objective**: Implement HDMI input detection and format negotiation
 **Atomic Tasks**:
-- [ ] **5.1**: Implement HDMI hot-plug detection and monitoring
-- [ ] **5.2**: Add EDID parsing and display timing detection
-- [ ] **5.3**: Implement video format auto-detection (resolution, color space)
-- [ ] **5.4**: Add V4L2 input enumeration (`VIDIOC_ENUM_INPUT`)
-- [ ] **5.5**: Implement input selection and switching (`VIDIOC_S_INPUT`)
+- [x] **5.1**: Implement HDMI hot-plug detection and monitoring
+- [⚠] **5.2**: Add EDID parsing and display timing detection (hardware support implemented, blocked by MIPS communication)
+- [⚠] **5.3**: Implement video format auto-detection (hardware support implemented, blocked by MIPS communication)
+- [x] **5.4**: Add V4L2 input enumeration (`VIDIOC_ENUM_INPUT`)
+- [x] **5.5**: Implement input selection and switching (`VIDIOC_S_INPUT`)
 
 ### 6. Testing and Validation Framework
 **Objective**: Establish testing procedures for safe driver validation
 **Atomic Tasks**:
-- [ ] **6.1**: Create driver loading and initialization tests
-- [ ] **6.2**: Implement V4L2 compliance testing procedures
-- [ ] **6.3**: Add HDMI input detection validation tests
-- [ ] **6.4**: Create basic capture functionality tests
-- [ ] **6.5**: Document testing procedures and expected results
+- [x] **6.1**: Create driver loading and initialization tests
+- [x] **6.2**: Implement V4L2 compliance testing procedures
+- [x] **6.3**: Add HDMI input detection validation tests
+- [x] **6.4**: Create basic capture functionality tests
+- [x] **6.5**: Document testing procedures and expected results
 
 ## Quality Validation
 
