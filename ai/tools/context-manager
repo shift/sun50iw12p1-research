@@ -1,0 +1,431 @@
+#!/usr/bin/env bash
+# Context Management Tool for HY300 Linux Porting Project
+
+set -euo pipefail
+
+CONTEXT_DIR="ai/contexts"
+SESSIONS_DIR="ai/sessions"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Ensure directories exist
+mkdir -p "$CONTEXT_DIR" "$SESSIONS_DIR"
+
+usage() {
+    cat << EOF
+Context Management Tool for HY300 Linux Porting Project
+
+Usage: $0 <command> [options]
+
+Commands:
+    save <name>             Save current session context
+    load <name>             Load saved session context
+    list                    List available contexts and sessions
+    current                 Show current project context
+    create-context <name>   Create new context file
+    session-summary         Generate session summary
+    export <name>           Export context for external use
+
+Context Management:
+    save session-name       Save current work state, task progress, findings
+    load session-name       Restore previous work state and context
+    current                 Display current project status and active tasks
+
+Examples:
+    $0 save "dram-analysis-progress"
+    $0 load "dram-analysis-progress"
+    $0 current
+    $0 create-context "u-boot-porting"
+    $0 session-summary
+EOF
+}
+
+# Get current project status
+get_current_status() {
+    local status_file="$CONTEXT_DIR/current-status.md"
+    
+    cat > "$status_file" << EOF
+# HY300 Linux Porting - Current Status
+
+**Generated:** $(date +"%Y-%m-%d %H:%M:%S")
+
+## Project Phase
+$(grep -A 5 "Phase II" README.md 2>/dev/null || echo "Phase II: U-Boot Porting")
+
+## Active Tasks
+EOF
+    
+    # Get active tasks
+    if [[ -f "ai/tools/task-manager" ]]; then
+        ./ai/tools/task-manager active >> "$status_file"
+    else
+        echo "No task manager available" >> "$status_file"
+    fi
+    
+    cat >> "$status_file" << EOF
+
+## Recent Progress
+$(tail -10 docs/tasks/completed/*.md 2>/dev/null | grep -E "(Status|Objective)" | tail -5 || echo "No recent completed tasks")
+
+## Current Blockers
+$(find docs/tasks/ -name "*.md" -exec grep -l "blocked" {} \; 2>/dev/null | head -3 || echo "No active blockers")
+
+## Key Files Status
+- ROM Analysis: $(ls -la firmware/ROM_ANALYSIS.md 2>/dev/null | awk '{print $5, $6, $7, $8}' || echo "Not found")
+- Boot0: $(ls -la firmware/boot0.bin 2>/dev/null | awk '{print $5, $6, $7, $8}' || echo "Not found")
+- Development Environment: $(ls -la flake.nix 2>/dev/null | awk '{print $5, $6, $7, $8}' || echo "Not found")
+
+## Environment Status
+- Nix Shell: \${IN_NIX_SHELL:-Not active}
+- Working Directory: $(pwd)
+- Git Status: $(git status --porcelain 2>/dev/null | wc -l) uncommitted changes
+
+## Next Priority
+$(./ai/tools/task-manager next 2>/dev/null | tail -5 || echo "Check task manager for next steps")
+EOF
+    
+    echo "$status_file"
+}
+
+# Save current session context
+save_session() {
+    local session_name="$1"
+    local session_file="$SESSIONS_DIR/${session_name}-$(date +%Y%m%d-%H%M%S).md"
+    
+    echo -e "${BLUE}Saving session context: $session_name${NC}"
+    
+    cat > "$session_file" << EOF
+# Session Context: $session_name
+
+**Saved:** $(date +"%Y-%m-%d %H:%M:%S")  
+**Working Directory:** $(pwd)
+
+## Session Summary
+[Describe what was accomplished in this session]
+
+## Current Project Status
+EOF
+    
+    # Include current status
+    local status_file=$(get_current_status)
+    cat "$status_file" >> "$session_file"
+    
+    cat >> "$session_file" << EOF
+
+## Active Work State
+
+### In Progress Tasks
+EOF
+    
+    # Get in-progress tasks
+    if [[ -f "ai/tools/task-manager" ]]; then
+        ./ai/tools/task-manager find-inprogress >> "$session_file" 2>/dev/null || echo "No in-progress tasks" >> "$session_file"
+    fi
+    
+    cat >> "$session_file" << EOF
+
+### Recent Commands/Actions
+[Document recent commands, file changes, discoveries]
+
+### Key Findings
+[Important discoveries, solutions, or insights from this session]
+
+### Next Steps
+[What should be done next, immediate priorities]
+
+### Blockers/Issues
+[Any blockers encountered or issues to resolve]
+
+## Technical Context
+
+### Files Modified
+EOF
+    
+    # Git status if available
+    if git status &>/dev/null; then
+        echo "#### Git Status" >> "$session_file"
+        git status --porcelain >> "$session_file" 2>/dev/null || echo "No git repository" >> "$session_file"
+        echo "" >> "$session_file"
+        
+        echo "#### Recent Commits" >> "$session_file"
+        git log --oneline -5 >> "$session_file" 2>/dev/null || echo "No commits" >> "$session_file"
+        echo "" >> "$session_file"
+    fi
+    
+    cat >> "$session_file" << EOF
+
+### Environment State
+- Nix Shell Active: \${IN_NIX_SHELL:-No}
+- Tools Available: $(which binwalk dtc aarch64-unknown-linux-gnu-gcc 2>/dev/null | wc -l)/3 expected tools
+- Directory Size: $(du -sh . 2>/dev/null | cut -f1)
+
+### Hardware/ROM Status
+- ROM File: $(ls -la update.img 2>/dev/null | awk '{print $5}' || echo "Not found") bytes
+- Boot0 Extracted: $(ls -la firmware/boot0.bin 2>/dev/null | awk '{print $5}' || echo "Not found") bytes
+- Analysis Complete: $(ls firmware/ROM_ANALYSIS.md &>/dev/null && echo "Yes" || echo "No")
+
+## Recovery Information
+
+### To Resume This Session:
+1. \`cd $(pwd)\`
+2. \`nix develop\` (if not using direnv)
+3. Load this context: \`./ai/tools/context-manager load $session_name\`
+4. Check active tasks: \`./ai/tools/task-manager active\`
+5. Continue with: [specific next steps]
+
+### Critical Files for Recovery:
+- Task state: docs/tasks/
+- Analysis: firmware/ROM_ANALYSIS.md
+- Environment: flake.nix, .envrc
+- Progress: This session file
+
+EOF
+    
+    echo -e "${GREEN}✅ Session saved: $session_file${NC}"
+    echo "Resume with: $0 load $(basename "$session_file" .md)"
+}
+
+# Load session context
+load_session() {
+    local session_name="$1"
+    
+    # Find session file (with or without timestamp)
+    local session_file=""
+    for file in "$SESSIONS_DIR"/"$session_name"*.md; do
+        if [[ -f "$file" ]]; then
+            session_file="$file"
+            break
+        fi
+    done
+    
+    if [[ -z "$session_file" ]]; then
+        echo -e "${RED}❌ Session not found: $session_name${NC}"
+        echo "Available sessions:"
+        ls "$SESSIONS_DIR"/*.md 2>/dev/null | sed 's/.*\///' | sed 's/\.md$//' || echo "No saved sessions"
+        return 1
+    fi
+    
+    echo -e "${BLUE}Loading session context: $(basename "$session_file")${NC}"
+    echo "========================================"
+    
+    # Display session content
+    cat "$session_file"
+    
+    echo
+    echo -e "${GREEN}📋 Context loaded. Review the above information.${NC}"
+    echo -e "${YELLOW}💡 Next: Check active tasks with: ./ai/tools/task-manager active${NC}"
+}
+
+# List available contexts and sessions
+list_contexts() {
+    echo -e "${BLUE}Available Contexts and Sessions${NC}"
+    echo "==============================="
+    echo
+    
+    echo -e "${GREEN}Context Files:${NC}"
+    if [[ -d "$CONTEXT_DIR" ]]; then
+        for file in "$CONTEXT_DIR"/*.md; do
+            [[ -f "$file" ]] || continue
+            local name=$(basename "$file" .md)
+            local size=$(stat -c%s "$file" 2>/dev/null || echo "0")
+            local date=$(stat -c%y "$file" 2>/dev/null | cut -d' ' -f1)
+            echo "  📄 $name ($size bytes, $date)"
+        done
+    else
+        echo "  No context files found"
+    fi
+    
+    echo
+    echo -e "${GREEN}Saved Sessions:${NC}"
+    if [[ -d "$SESSIONS_DIR" ]]; then
+        for file in "$SESSIONS_DIR"/*.md; do
+            [[ -f "$file" ]] || continue
+            local name=$(basename "$file" .md)
+            local size=$(stat -c%s "$file" 2>/dev/null || echo "0")
+            local date=$(stat -c%y "$file" 2>/dev/null | cut -d' ' -f1)
+            echo "  💾 $name ($size bytes, $date)"
+        done
+    else
+        echo "  No saved sessions found"
+    fi
+}
+
+# Show current project context
+show_current() {
+    echo -e "${BLUE}Current Project Context${NC}"
+    echo "======================="
+    
+    local status_file=$(get_current_status)
+    cat "$status_file"
+    rm -f "$status_file"
+}
+
+# Create new context file
+create_context() {
+    local context_name="$1"
+    local context_file="$CONTEXT_DIR/${context_name}.md"
+    
+    cat > "$context_file" << EOF
+# Context: $context_name
+
+**Created:** $(date +"%Y-%m-%d %H:%M:%S")  
+**Project:** HY300 Linux Porting
+
+## Purpose
+[Describe the purpose of this context]
+
+## Key Information
+[Important facts, configurations, or discoveries]
+
+## Technical Details
+[Technical specifications, parameters, or requirements]
+
+## Dependencies
+[What this context depends on or relates to]
+
+## Files/Locations
+[Relevant files, directories, or resources]
+
+## Status
+[Current status or progress related to this context]
+
+## Notes
+[Additional notes, warnings, or considerations]
+EOF
+    
+    echo -e "${GREEN}✅ Created context: $context_file${NC}"
+    echo "Edit the context file to add details."
+}
+
+# Generate session summary
+session_summary() {
+    echo -e "${BLUE}Generating Session Summary${NC}"
+    echo "=========================="
+    
+    local summary_file="$SESSIONS_DIR/session-summary-$(date +%Y%m%d-%H%M%S).md"
+    
+    cat > "$summary_file" << EOF
+# Session Summary
+
+**Generated:** $(date +"%Y-%m-%d %H:%M:%S")
+
+## Project Overview
+HY300 Android Projector Linux Porting Project
+
+## Current Status
+EOF
+    
+    # Include current status
+    local status_file=$(get_current_status)
+    tail -n +4 "$status_file" >> "$summary_file"
+    rm -f "$status_file"
+    
+    cat >> "$summary_file" << EOF
+
+## Recent Activity
+### Git Log (Last 10 commits)
+EOF
+    
+    git log --oneline -10 >> "$summary_file" 2>/dev/null || echo "No git history available" >> "$summary_file"
+    
+    cat >> "$summary_file" << EOF
+
+### Modified Files
+EOF
+    
+    git status --porcelain >> "$summary_file" 2>/dev/null || echo "No git repository or no changes" >> "$summary_file"
+    
+    echo -e "${GREEN}✅ Session summary: $summary_file${NC}"
+}
+
+# Export context for external use
+export_context() {
+    local export_name="$1"
+    local export_file="$CONTEXT_DIR/export-${export_name}-$(date +%Y%m%d-%H%M%S).md"
+    
+    cat > "$export_file" << EOF
+# Context Export: $export_name
+
+**Exported:** $(date +"%Y-%m-%d %H:%M:%S")  
+**Project:** HY300 Linux Porting
+
+## Project Summary
+$(head -20 README.md 2>/dev/null || echo "No README available")
+
+## Current Status
+EOF
+    
+    local status_file=$(get_current_status)
+    cat "$status_file" >> "$export_file"
+    rm -f "$status_file"
+    
+    cat >> "$export_file" << EOF
+
+## Key Technical Information
+### ROM Analysis
+$(head -50 firmware/ROM_ANALYSIS.md 2>/dev/null || echo "No ROM analysis available")
+
+### Development Environment
+$(head -30 flake.nix 2>/dev/null || echo "No flake.nix available")
+
+## Agent Guidelines
+$(head -50 AGENTS.md 2>/dev/null || echo "No agent guidelines available")
+
+EOF
+    
+    echo -e "${GREEN}✅ Context exported: $export_file${NC}"
+}
+
+# Main command handling
+case "${1:-}" in
+    save)
+        if [[ -z "${2:-}" ]]; then
+            echo "Error: Session name required" >&2
+            usage
+            exit 1
+        fi
+        save_session "$2"
+        ;;
+    load)
+        if [[ -z "${2:-}" ]]; then
+            echo "Error: Session name required" >&2
+            usage
+            exit 1
+        fi
+        load_session "$2"
+        ;;
+    list)
+        list_contexts
+        ;;
+    current)
+        show_current
+        ;;
+    create-context)
+        if [[ -z "${2:-}" ]]; then
+            echo "Error: Context name required" >&2
+            usage
+            exit 1
+        fi
+        create_context "$2"
+        ;;
+    session-summary)
+        session_summary
+        ;;
+    export)
+        if [[ -z "${2:-}" ]]; then
+            echo "Error: Export name required" >&2
+            usage
+            exit 1
+        fi
+        export_context "$2"
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac

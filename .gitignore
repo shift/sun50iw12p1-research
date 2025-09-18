@@ -17,7 +17,6 @@ firmware/*
 !firmware/README.md
 
 # Extracted firmware
-firmware/
 extracted/
 *_extracted/
 
@@ -64,6 +63,9 @@ nand_backup.img
 # OS files
 .DS_Store
 Thumbs.db
+
+# direnv
+.direnv
 
 # Log files
 *.log

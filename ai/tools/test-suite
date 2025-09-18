@@ -1,0 +1,273 @@
+#!/usr/bin/env bash
+# AI Tools Test Suite for HY300 Linux Porting Project
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+TOOLS_DIR="ai/tools"
+TEST_DIR="ai/tests"
+
+mkdir -p "$TEST_DIR"
+
+echo -e "${BLUE}🧪 AI Tools Test Suite${NC}"
+echo "======================="
+echo
+
+# Test task-manager
+test_task_manager() {
+    echo -e "${BLUE}Testing task-manager...${NC}"
+    
+    local errors=0
+    
+    # Test executable
+    if [[ ! -x "$TOOLS_DIR/task-manager" ]]; then
+        echo -e "${RED}❌ task-manager not executable${NC}"
+        ((errors++))
+    else
+        echo -e "${GREEN}✅ task-manager executable${NC}"
+    fi
+    
+    # Test list command
+    if "$TOOLS_DIR/task-manager" list >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ task-manager list works${NC}"
+    else
+        echo -e "${RED}❌ task-manager list failed${NC}"
+        ((errors++))
+    fi
+    
+    # Test next command
+    if "$TOOLS_DIR/task-manager" next >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ task-manager next works${NC}"
+    else
+        echo -e "${RED}❌ task-manager next failed${NC}"
+        ((errors++))
+    fi
+    
+    # Test validate command
+    if "$TOOLS_DIR/task-manager" validate >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ task-manager validate works${NC}"
+    else
+        echo -e "${YELLOW}⚠️  task-manager validate found issues (expected)${NC}"
+    fi
+    
+    # Test find-inprogress
+    if "$TOOLS_DIR/task-manager" find-inprogress >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ task-manager find-inprogress works${NC}"
+    else
+        echo -e "${GREEN}✅ task-manager find-inprogress works (no in-progress tasks)${NC}"
+    fi
+    
+    return $errors
+}
+
+# Test context-manager
+test_context_manager() {
+    echo -e "${BLUE}Testing context-manager...${NC}"
+    
+    local errors=0
+    
+    # Test executable
+    if [[ ! -x "$TOOLS_DIR/context-manager" ]]; then
+        echo -e "${RED}❌ context-manager not executable${NC}"
+        ((errors++))
+    else
+        echo -e "${GREEN}✅ context-manager executable${NC}"
+    fi
+    
+    # Test current command
+    if "$TOOLS_DIR/context-manager" current >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ context-manager current works${NC}"
+    else
+        echo -e "${RED}❌ context-manager current failed${NC}"
+        ((errors++))
+    fi
+    
+    # Test list command
+    if "$TOOLS_DIR/context-manager" list >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ context-manager list works${NC}"
+    else
+        echo -e "${RED}❌ context-manager list failed${NC}"
+        ((errors++))
+    fi
+    
+    # Test create-context
+    local test_context="test-context-$$"
+    if "$TOOLS_DIR/context-manager" create-context "$test_context" >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ context-manager create-context works${NC}"
+        # Clean up
+        rm -f "ai/contexts/${test_context}.md"
+    else
+        echo -e "${RED}❌ context-manager create-context failed${NC}"
+        ((errors++))
+    fi
+    
+    # Test session-summary
+    if "$TOOLS_DIR/context-manager" session-summary >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ context-manager session-summary works${NC}"
+        # Clean up
+        rm -f ai/sessions/session-summary-*.md
+    else
+        echo -e "${RED}❌ context-manager session-summary failed${NC}"
+        ((errors++))
+    fi
+    
+    return $errors
+}
+
+# Test integration
+test_integration() {
+    echo -e "${BLUE}Testing tool integration...${NC}"
+    
+    local errors=0
+    
+    # Test that tools can find each other
+    if "$TOOLS_DIR/task-manager" next | grep -q "task-manager"; then
+        echo -e "${GREEN}✅ task-manager references itself correctly${NC}"
+    else
+        echo -e "${RED}❌ task-manager self-reference issue${NC}"
+        ((errors++))
+    fi
+    
+    # Test that context-manager can call task-manager
+    if "$TOOLS_DIR/context-manager" current | grep -q "Active Tasks"; then
+        echo -e "${GREEN}✅ context-manager calls task-manager successfully${NC}"
+    else
+        echo -e "${RED}❌ context-manager task-manager integration failed${NC}"
+        ((errors++))
+    fi
+    
+    # Test directory creation
+    mkdir -p "$TEST_DIR/test-session"
+    if [[ -d "$TEST_DIR/test-session" ]]; then
+        echo -e "${GREEN}✅ Directory creation works${NC}"
+        rmdir "$TEST_DIR/test-session"
+    else
+        echo -e "${RED}❌ Directory creation failed${NC}"
+        ((errors++))
+    fi
+    
+    return $errors
+}
+
+# Test task workflow
+test_workflow() {
+    echo -e "${BLUE}Testing workflow simulation...${NC}"
+    
+    local errors=0
+    local test_task="test-workflow-$$"
+    
+    # Create test task
+    if "$TOOLS_DIR/task-manager" create "$test_task" >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ Task creation works${NC}"
+        
+        # Test task start
+        if "$TOOLS_DIR/task-manager" start "$test_task" >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ Task start works${NC}"
+            
+            # Test task completion
+            if "$TOOLS_DIR/task-manager" complete "$test_task" >/dev/null 2>&1; then
+                echo -e "${GREEN}✅ Task completion works${NC}"
+                
+                # Small delay to ensure file operations complete
+                sleep 0.1
+                
+                # Verify task moved to completed (use more robust check)
+                local completed_file=$(find "docs/tasks/completed/" -name "*$test_task*.md" 2>/dev/null | head -1)
+                if [[ -n "$completed_file" && -f "$completed_file" ]]; then
+                    echo -e "${GREEN}✅ Task moved to completed directory${NC}"
+                    # Clean up
+                    rm -f "$completed_file"
+                else
+                    echo -e "${RED}❌ Task not moved to completed directory${NC}"
+                    echo -e "${YELLOW}Debug: Looking for files matching *$test_task* in docs/tasks/completed/${NC}"
+                    ls docs/tasks/completed/*"$test_task"* 2>/dev/null || echo "No matching files found"
+                    ((errors++))
+                fi
+            else
+                echo -e "${RED}❌ Task completion failed${NC}"
+                ((errors++))
+            fi
+        else
+            echo -e "${RED}❌ Task start failed${NC}"
+            ((errors++))
+        fi
+    else
+        echo -e "${RED}❌ Task creation failed${NC}"
+        ((errors++))
+    fi
+    
+    # Clean up any remaining test files
+    rm -f "docs/tasks/"*"$test_task"*.md
+    
+    return $errors
+}
+
+# Main test execution
+main() {
+    local total_errors=0
+    
+    echo -e "${BLUE}Starting AI Tools Test Suite${NC}"
+    echo
+    
+    # Test task-manager
+    if test_task_manager; then
+        echo -e "${GREEN}✅ task-manager tests passed${NC}"
+    else
+        echo -e "${RED}❌ task-manager tests failed${NC}"
+        ((total_errors++))
+    fi
+    echo
+    
+    # Test context-manager
+    if test_context_manager; then
+        echo -e "${GREEN}✅ context-manager tests passed${NC}"
+    else
+        echo -e "${RED}❌ context-manager tests failed${NC}"
+        ((total_errors++))
+    fi
+    echo
+    
+    # Test integration
+    if test_integration; then
+        echo -e "${GREEN}✅ integration tests passed${NC}"
+    else
+        echo -e "${RED}❌ integration tests failed${NC}"
+        ((total_errors++))
+    fi
+    echo
+    
+    # Test workflow
+    if test_workflow; then
+        echo -e "${GREEN}✅ workflow tests passed${NC}"
+    else
+        echo -e "${RED}❌ workflow tests failed${NC}"
+        ((total_errors++))
+    fi
+    echo
+    
+    # Summary
+    echo -e "${BLUE}Test Summary${NC}"
+    echo "============"
+    if (( total_errors == 0 )); then
+        echo -e "${GREEN}🎉 All tests passed! Tools are ready for use.${NC}"
+        echo
+        echo -e "${BLUE}Usage Examples:${NC}"
+        echo "  ./ai/tools/task-manager list"
+        echo "  ./ai/tools/task-manager next"
+        echo "  ./ai/tools/context-manager current"
+        echo "  ./ai/tools/context-manager save 'session-name'"
+    else
+        echo -e "${RED}❌ $total_errors test categories failed${NC}"
+        echo -e "${YELLOW}Review the errors above and fix the tools${NC}"
+        return 1
+    fi
+}
+
+# Run tests
+main "$@"

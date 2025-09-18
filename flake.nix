@@ -34,6 +34,7 @@
             bison
             flex
             openssl
+            gnutls  # For U-Boot tools
             ncurses
             elfutils
             
@@ -61,6 +62,8 @@
             # Python for scripting
             python3
             python3Packages.pip
+            python3Packages.setuptools
+            swig  # For Python bindings
             python3Packages.pyserial  # For UART communication
             
             # Text processing
