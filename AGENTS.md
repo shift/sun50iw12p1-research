@@ -44,19 +44,84 @@ This is a hardware porting project to run mainline Linux on the HY300 Android pr
 - `tools/compare_dram_params.py` - Tool to compare extracted DRAM parameters with U-Boot defaults
 - `tools/hex_viewer.py` - Interactive hex viewer for firmware analysis
 
-## Agent Workflow Rules
+## Task File Management
 
-### 1. Task Continuity (CRITICAL)
-**Always check for in-progress tasks first:**
+### Creating New Tasks
+When tracking work, create new task files in `docs/tasks/` with format:
+- **Filename**: `###-descriptive-name.md` (e.g., `022-device-tree-integration.md`)
+- **Status field**: Use `pending`, `in_progress`, `completed`, or `blocked`
+- **Move completed tasks**: To `docs/tasks/completed/` directory when finished
+
+### Task Status Updates
+- Edit task files directly to update status
+- Only one task should have `in_progress` status at a time
+- Document progress within the task file itself
+- Reference task numbers in git commit messages
+
+### Task Discovery and Management
+Use the comprehensive `ai/tools/task-manager` tool for all task operations:
+
+#### Core Task Management Commands
 ```bash
-# Check for any in-progress or pending tasks
-find docs/tasks/ -name "*.md" -exec grep -l "Status.*in_progress\|Status.*pending" {} \;
+# Check for any in-progress tasks (CRITICAL - always run first)
+ai/tools/task-manager find-inprogress
+
+# Get next priority task recommendation
+ai/tools/task-manager next
+
+# List all tasks with status
+ai/tools/task-manager list
+
+# Show only active (in_progress + pending + blocked) tasks
+ai/tools/task-manager active
+
+# Create new task
+ai/tools/task-manager create "descriptive-task-name"
+
+# Update task status
+ai/tools/task-manager start 015        # Mark as in_progress
+ai/tools/task-manager complete 015     # Mark as completed and move to completed/
+ai/tools/task-manager block 015 "Hardware access required"
+
+# View specific task details
+ai/tools/task-manager status 015
+
+# Validate all task files
+ai/tools/task-manager validate
 ```
 
-**Priority Order:**
-1. **Continue last worked task** - Check `docs/tasks/` for in_progress status
-2. **Pick up pending tasks** - Next highest priority pending task
-3. **Create new task** - Only if no pending tasks exist
+#### Task Management Workflow
+1. **Always start with**: `ai/tools/task-manager find-inprogress`
+2. **If in-progress task found**: Continue working on it
+3. **If no in-progress tasks**: Use `ai/tools/task-manager next` for recommendations
+4. **When starting work**: `ai/tools/task-manager start <task_id>`
+5. **When completing**: `ai/tools/task-manager complete <task_id>`
+
+### Additional AI Tools Available
+- **`ai/tools/context-manager`**: Context and session management
+- **`ai/tools/git-manager`**: Git operations following project standards  
+- **`ai/tools/test-suite`**: Testing framework for AI tools
+
+### Tool Usage Policy
+- **Never use bash find/grep** for task discovery - use the task-manager tool
+- **Never use TodoRead/TodoWrite tools** - task files are the single source of truth
+- **Always use task-manager** for task status operations
+- **Create additional tools** as needed for specific workflows
+
+## Agent Workflow Rules
+### 1. Task Continuity (CRITICAL)
+**Always check for in-progress tasks first using the task-manager tool:**
+```bash
+# ALWAYS run this first when starting work
+ai/tools/task-manager find-inprogress
+```
+
+**Workflow Priority Order:**
+1. **Continue last worked task** - If `find-inprogress` returns a task, work on it
+2. **Pick up pending tasks** - Use `ai/tools/task-manager next` for recommendations
+3. **Create new task** - Use `ai/tools/task-manager create` if no pending tasks exist
+
+**Never use TodoRead/TodoWrite tools** - task files are the single source of truth
 
 ### 2. No Shortcuts Policy (MANDATORY)
 - **NEVER mock, stub, or simulate code** that should be functional
@@ -176,11 +241,11 @@ nix develop -c -- <command>
 ## Agent Decision Framework
 
 ### When Starting Work:
-1. **Check `docs/tasks/`** for any in_progress tasks
+1. **Use `ai/tools/task-manager find-inprogress`** to check for any in_progress tasks
 2. **Continue in_progress task** if found
-3. **Check for pending tasks** if no in_progress work
+3. **Use `ai/tools/task-manager next`** to get next priority task if no in_progress work
 4. **Review task dependencies** before starting
-5. **Update task status** to in_progress when beginning
+5. **Use `ai/tools/task-manager start <task_id>`** when beginning work
 
 ### When Creating New Tasks:
 - **Break down complexity** - prefer atomic, testable tasks
@@ -192,8 +257,8 @@ nix develop -c -- <command>
 - **Validate all success criteria** met
 - **Run tests and verification** procedures
 - **Update documentation** with results
-- **Mark task completed** and move to completed/ directory
-- **Identify next task** dependencies and priorities
+- **Use `ai/tools/task-manager complete <task_id>`** to mark completed and move to completed/
+- **Use `ai/tools/task-manager next`** to identify next task priorities
 
 ## Technical Standards
 
@@ -301,8 +366,8 @@ nix develop -c -- <command>
 
 **Before starting any work:**
 - Read current project status from `docs/PROJECT_OVERVIEW.md`
-- Check for existing in_progress tasks via TodoRead tool
-- Check `docs/tasks/` directory for task status
+- Check for existing in-progress tasks using `ai/tools/task-manager find-inprogress`
+- Use `ai/tools/task-manager next` to get task recommendations
 - Verify development environment ready (Nix devShell)
 - Understand current phase objectives and dependencies
 
@@ -315,7 +380,8 @@ nix develop -c -- <command>
 
 **During task execution:**
 - Follow no-shortcuts policy strictly
-- Update task status via TodoWrite tool and file updates
+- Update task status using `ai/tools/task-manager start/complete/block` commands
+- Update task progress directly in task files
 - Validate each step before proceeding
 - Maintain hardware safety protocols
 - Document research findings as they're discovered
@@ -331,8 +397,8 @@ nix develop -c -- <command>
 **After task completion:**
 - Verify all success criteria met via defined validation procedures
 - Update project documentation with results and cross-references
-- Move completed tasks to `docs/tasks/completed/` directory
-- Prepare next task dependencies and identify blockers
+- Use `ai/tools/task-manager complete <task_id>` to mark complete and move to completed/
+- Use `ai/tools/task-manager next` to identify next priorities and dependencies
 - Commit all changes with clear messages referencing task numbers
 
 **Research and Analysis Protocol:**
