@@ -54,15 +54,15 @@
 #define TVTOP_STATUS_FORMAT_DETECTED BIT(2)
 #define TVTOP_STATUS_CAPTURE_ACTIVE  BIT(3)
 
-/* Clock indices (from Task 022 device tree analysis) */
+/* TV-specific clock indices (from Task 022/019 analysis) */
 enum tvcap_clks {
-	TVCAP_CLK_BUS_DISP = 0,
-	TVCAP_CLK_BUS_TVCAP,
-	TVCAP_CLK_BUS_DEMOD,
-	TVCAP_CLK_CAP_300M,
-	TVCAP_CLK_VINCAP_DMA,
-	TVCAP_CLK_HDMI_AUDIO_BUS,
-	TVCAP_CLK_HDMI_AUDIO,
+	TVCAP_CLK_BUS_TVCAP = 0,    /* Bus clock for TV capture */
+	TVCAP_CLK_CAP_300M,         /* 300MHz capture clock */
+	TVCAP_CLK_VINCAP_DMA,       /* DMA clock for video input capture */
+	TVCAP_CLK_TVCAP,            /* Main TV capture clock */
+	TVCAP_CLK_TVE,              /* TV encoder clock */
+	TVCAP_CLK_DEMOD,            /* Demodulator clock */
+	TVCAP_CLK_TVTOP,            /* TV TOP subsystem clock */
 	TVCAP_CLK_COUNT
 };
 
@@ -220,6 +220,101 @@ static const struct v4l2_file_operations tvcap_fops = {
 	.read           = vb2_fop_read,
 };
 
+
+/*
+ * TV Capture Clock Management Functions
+ */
+
+static int tvcap_clocks_enable(struct sunxi_tvcap_dev *tvcap)
+{
+	int ret;
+
+	dev_dbg(tvcap->dev, "Enabling TV capture clocks
+");
+
+	/* Enable all TV capture clocks in bulk */
+	ret = clk_bulk_prepare_enable(TVCAP_CLK_COUNT, tvcap->clks);
+	if (ret) {
+		dev_err(tvcap->dev, "Failed to enable TV capture clocks: %d
+", ret);
+		return ret;
+	}
+
+	/* Set specific clock rates for optimal TV capture performance */
+	/* CAP_300M clock - 300MHz for high-speed capture */
+	ret = clk_set_rate(tvcap->clks[TVCAP_CLK_CAP_300M].clk, 300000000);
+	if (ret)
+		dev_warn(tvcap->dev, "Failed to set CAP_300M rate: %d
+", ret);
+
+	/* VINCAP_DMA clock - optimal DMA transfer rate */
+	ret = clk_set_rate(tvcap->clks[TVCAP_CLK_VINCAP_DMA].clk, 200000000);
+	if (ret)
+		dev_warn(tvcap->dev, "Failed to set VINCAP_DMA rate: %d
+", ret);
+
+	/* TVCAP clock - main TV capture clock */
+	ret = clk_set_rate(tvcap->clks[TVCAP_CLK_TVCAP].clk, 150000000);
+	if (ret)
+		dev_warn(tvcap->dev, "Failed to set TVCAP rate: %d
+", ret);
+
+	/* TVE clock - TV encoder clock */
+	ret = clk_set_rate(tvcap->clks[TVCAP_CLK_TVE].clk, 297000000);
+	if (ret)
+		dev_warn(tvcap->dev, "Failed to set TVE rate: %d
+", ret);
+
+	dev_info(tvcap->dev, "TV capture clocks enabled successfully
+");
+	return 0;
+}
+
+static void tvcap_clocks_disable(struct sunxi_tvcap_dev *tvcap)
+{
+	dev_dbg(tvcap->dev, "Disabling TV capture clocks
+");
+
+	/* Disable all TV capture clocks in bulk */
+	clk_bulk_disable_unprepare(TVCAP_CLK_COUNT, tvcap->clks);
+
+	dev_dbg(tvcap->dev, "TV capture clocks disabled
+");
+}
+
+static int tvcap_clocks_init(struct sunxi_tvcap_dev *tvcap)
+{
+	struct device *dev = tvcap->dev;
+	int ret, i;
+
+	/* Initialize TV-specific clock names (must match device tree) */
+	static const char * const tv_clk_names[TVCAP_CLK_COUNT] = {
+		"clk_bus_tvcap",     /* Bus interface clock */
+		"cap_300m",          /* 300MHz capture clock */
+		"vincap_dma_clk",    /* DMA transfer clock */
+		"tvcap",             /* Main TV capture clock */
+		"tve",               /* TV encoder clock */
+		"demod",             /* Demodulator clock */
+		"tvtop"              /* TV TOP subsystem clock */
+	};
+
+	/* Assign clock names to bulk data structure */
+	for (i = 0; i < TVCAP_CLK_COUNT; i++)
+		tvcap->clks[i].id = tv_clk_names[i];
+
+	/* Get all TV capture clocks from device tree */
+	ret = devm_clk_bulk_get(dev, TVCAP_CLK_COUNT, tvcap->clks);
+	if (ret) {
+		dev_err(dev, "Failed to get TV capture clocks: %d
+", ret);
+		return ret;
+	}
+
+	dev_info(dev, "TV capture clocks initialized: %d clocks
+", TVCAP_CLK_COUNT);
+	return 0;
+}
+
 /*
  * Hardware interface functions
  */
@@ -242,12 +337,11 @@ static int tvcap_hw_init(struct sunxi_tvcap_dev *tvcap)
 	u32 reg_val;
 	int ret;
 	
-	dev_dbg(tvcap->dev, "Initializing TV capture hardware\n");
-	
-	/* Enable clocks */
-	ret = clk_bulk_prepare_enable(TVCAP_CLK_COUNT, tvcap->clks);
+	dev_dbg(tvcap->dev, "Initializing TV capture hardware\n");	/* Enable TV capture clocks */
+	ret = tvcap_clocks_enable(tvcap);
 	if (ret) {
-		dev_err(tvcap->dev, "Failed to enable clocks: %d\n", ret);
+		dev_err(tvcap->dev, "Failed to enable TV capture clocks: %d
+", ret);
 		return ret;
 	}
 	
@@ -274,10 +368,8 @@ static void tvcap_hw_cleanup(struct sunxi_tvcap_dev *tvcap)
 	writel(0, tvcap->regs + TVTOP_IRQ_EN_REG);
 	
 	/* Reset hardware */
-	tvcap_hw_reset(tvcap);
-	
-	/* Disable clocks */
-	clk_bulk_disable_unprepare(TVCAP_CLK_COUNT, tvcap->clks);
+	tvcap_hw_reset(tvcap);	/* Disable TV capture clocks */
+	tvcap_clocks_disable(tvcap);
 }
 
 /*
