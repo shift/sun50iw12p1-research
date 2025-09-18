@@ -54,13 +54,13 @@ Implement the V4L2 TV capture driver (`sunxi-tvcap`) for HDMI input functionalit
 
 ### 3. MIPS Co-processor Integration
 **Objective**: Implement ARM-MIPS communication for TV capture coordination
-**Status**: ✅ **PARTIALLY COMPLETE** - CPU-COMM driver completed, NSI and TVTOP remaining
+**Status**: ✅ **PARTIALLY COMPLETE** - CPU-COMM driver completed, HDMI input functions in progress
 **Atomic Tasks**:
 - [x] **3.1**: Implement SUNXI_NSI driver for ARM-MIPS communication (completed)
 - [x] **3.2**: Implement SUNXI_CPU_COMM HDMI command interface (✅ **COMPLETED** - 819 lines)
 - [x] **3.3**: Implement SUNXI_TVTOP integration with sunxi-tvcap (completed)
-- [ ] **3.4**: Add HDMI input switching via MIPS coordination (1 week)
-- [ ] **3.5**: Add EDID reading and format detection through MIPS communication (1 week)
+- [🔄] **3.4**: Add HDMI input switching via MIPS coordination (in progress - functions created)
+- [🔄] **3.5**: Add EDID reading and format detection through MIPS communication (in progress - functions created)
 
 **BREAKTHROUGH**: Complete ARM-MIPS communication protocol reverse-engineered from factory firmware:
 - **Complete Memory Layout**: 40MB shared memory at 0x4b100000 with documented regions
@@ -174,11 +174,57 @@ Implement the V4L2 TV capture driver (`sunxi-tvcap`) for HDMI input functionalit
 - `docs/MISSING_COMPONENTS_IMPLEMENTATION_ROADMAP.md` - Detailed timeline
 - `docs/INTEGRATION_DEPENDENCIES_ANALYSIS.md` - Task 019 specific impact
 
-### **Implementation Strategy**
-- **Phase-based development**: Build incrementally from basic framework to full functionality
-- **MIPS-first approach**: Complete ARM-MIPS communication before display output
-- **Factory analysis foundation**: Leverage comprehensive reverse engineering results
-- **Mainline compatibility**: Ensure driver meets upstream Linux kernel standards
+## Progress Update - September 18, 2025
+
+### **HDMI Input Functions Implementation** 
+**Status**: 🔄 **IN PROGRESS** - Functions created, integration pending
+
+**Completed Work**:
+- ✅ **HDMI Input Functions**: Created complete HDMI input management functions (212 lines)
+  - `tvcap_enum_input()` - Enumerate HDMI input with connection detection
+  - `tvcap_g_input()` / `tvcap_s_input()` - Input selection and switching  
+  - `tvcap_g_edid()` - EDID reading via MIPS communication
+  - `tvcap_query_dv_timings()` - DV timing detection and format parsing
+- ✅ **MIPS Integration**: Functions use `sunxi-cpu-comm.c` exported functions for ARM-MIPS communication
+- ✅ **V4L2 Compliance**: Standard V4L2 IOCTL interface for input management
+
+**Files Created**:
+- `drivers/media/platform/sunxi/hdmi-input-functions.c` (212 lines) - Complete HDMI input functions
+- `drivers/media/platform/sunxi/05-hdmi-input-functions.patch` - Integration patch for sunxi-tvcap-enhanced.c
+- `drivers/media/platform/sunxi/hdmi-input-integration.patch` - Comprehensive integration patch
+
+**Pending Work**:
+- 🔄 **Integration**: Apply HDMI input functions to main `sunxi-tvcap-enhanced.c` driver
+- 🔄 **IOCTL Operations**: Update V4L2 IOCTL structure to include input management functions
+- 🔄 **Device Initialization**: Add input management initialization to device probe
+- 🔄 **Testing**: Compile and validate integrated driver functionality
+
+**Session Issue**: Previous session crashed due to attempting to use Edit tool on .c files (violates session-critical rule). Integration patches created but not successfully applied.
+
+**Next Session Actions**:
+1. Apply integration patches using proper patch-based editing for .c files
+2. Update V4L2 IOCTL operations structure 
+3. Initialize input management in device probe function
+4. Compile and test integrated driver
+5. Update task completion status and move to testing phase
+
+**Technical Specifications**:
+- **HDMI Input Detection**: Real-time connection status via MIPS communication
+- **EDID Support**: 256-byte EDID buffer reading with error handling
+- **DV Timings**: Standard 1080p/720p timing parameter conversion
+- **Error Handling**: Comprehensive validation and user feedback
+- **Memory Safety**: Proper buffer management and copy_to_user operations
+
+**Integration Points**:
+- External functions from `sunxi-cpu-comm.c`: `hdmi_detect_exported()`, `hdmi_read_edid_exported()`, `hdmi_get_format_exported()`
+- Device structure extensions: `current_input`, `hdmi_connected` fields  
+- V4L2 IOCTL additions: `.vidioc_enum_input`, `.vidioc_g_input`, `.vidioc_s_input`, `.vidioc_g_edid`, `.vidioc_query_dv_timings`
+
+**Implementation Quality**:
+- ✅ **Linux Kernel Standards**: Follows kernel coding conventions and error handling patterns
+- ✅ **V4L2 Compliance**: Standard input management interface
+- ✅ **MIPS Coordination**: Proper ARM-MIPS communication protocol usage
+- ✅ **Hardware Safety**: Validation and error checking throughout
 
 **MAJOR BREAKTHROUGH**: ARM-MIPS communication protocols fully reverse-engineered from factory firmware. Complete specifications now available for implementing missing platform drivers, enabling immediate progress on MIPS integration tasks 3.1-3.5.
 
@@ -191,9 +237,9 @@ Implement the V4L2 TV capture driver (`sunxi-tvcap`) for HDMI input functionalit
 - Device tree integration and error handling
 
 **Updated Timeline**: 
-- **Original**: 4-6 weeks additional development for complete solution
-- **Current**: 4-5 weeks for full implementation (1 week reduction due to CPU-COMM completion)
-- **Minimum viable**: 2-3 weeks for basic HDMI input capture (integration of completed drivers)
+- **Next Session**: 2-3 hours to complete integration and testing (reduced from 1 week due to functions completion)
+- **Minimum viable**: Integration complete within 1 session
+- **Full testing**: Additional 1-2 sessions for comprehensive driver validation
 
 ### **Critical Hardware Dependencies**
 Based on Task 022 analysis, the driver requires:
