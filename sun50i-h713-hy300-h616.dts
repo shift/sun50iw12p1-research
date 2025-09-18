@@ -1,0 +1,305 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Device Tree for HY300 Android Projector with Allwinner H713 SoC
+ * 
+ * Based on hardware analysis and H616 reference architecture:
+ * - Allwinner H713 SoC (sun50iw12p1, tv303 platform)
+ * - H616-compatible core architecture with projector-specific features
+ * - Mali-G31 GPU with Panfrost support (H616-compatible)
+ * - Projector-specific hardware (motors, sensors, thermal management)
+ *
+ * Copyright (c) 2025 Linux on HY300 Project
+ */
+
+/dts-v1/;
+
+#include "sun50i-h616.dtsi"
+#include "sun50i-h616-cpu-opp.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/leds/common.h>
+
+/ {
+	model = "HY300 Android Projector";
+	compatible = "hy300,projector", "allwinner,sun50i-h713", "allwinner,sun50i-h616";
+
+	aliases {
+		serial0 = &uart0;
+		mmc0 = &mmc2;  /* eMMC */
+		mmc1 = &mmc0;  /* SD card */
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	/*
+	 * HY300 Projector Power Management
+	 * Based on factory DTB analysis - 3.3V and 5V rails
+	 */
+	reg_vcc3v3: vcc3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
+	reg_vcc5v: vcc5v {
+		compatible = "regulator-fixed"; 
+		regulator-name = "vcc-5v";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-always-on;
+	};
+
+	/*
+	 * HY300 Projector Status LEDs
+	 * Factory DTB shows power and status LED configuration
+	 */
+	leds {
+		compatible = "gpio-leds";
+
+		led-power {
+			function = LED_FUNCTION_POWER;
+			color = <LED_COLOR_ID_BLUE>;
+			gpios = <&pio 2 12 GPIO_ACTIVE_HIGH>; /* PC12 - Power LED */
+			default-state = "on";
+		};
+
+		led-status {
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&pio 2 13 GPIO_ACTIVE_HIGH>; /* PC13 - Status LED */
+		};
+	};
+
+	/*
+	 * HY300 Projector Thermal Management
+	 * Factory DTB shows thermal zones for SoC and projector components
+	 */
+	thermal-zones {
+		cpu-thermal {
+			polling-delay-passive = <0>;
+			polling-delay = <1000>;
+			thermal-sensors = <&ths 2>;
+			sustainable-power = <1000>;
+
+			trips {
+				cpu_warm: cpu-warm {
+					temperature = <75000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				cpu_hot_pre: cpu-hot-pre {
+					temperature = <80000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				cpu_hot: cpu-hot {
+					temperature = <85000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				cpu_emergency: cpu-emergency {
+					temperature = <105000>;
+					hysteresis = <5000>;
+					type = "critical";
+				};
+			};
+
+			cooling-maps {
+				map0 {
+					trip = <&cpu_warm>;
+					cooling-device = <&cpu0 THERMAL_NO_LIMIT 1>;
+				};
+
+				map1 {
+					trip = <&cpu_hot_pre>;
+					cooling-device = <&cpu0 1 2>;
+				};
+
+				map2 {
+					trip = <&cpu_hot>;
+					cooling-device = <&cpu0 2 THERMAL_NO_LIMIT>;
+				};
+			};
+		};
+	};
+};
+
+/*
+ * CPU Power Supply Configuration  
+ * H616-compatible CPU scaling with projector-optimized voltages
+ */
+&cpu0 {
+	cpu-supply = <&reg_vcc3v3>;
+};
+
+/*
+ * Mali-G31 GPU Configuration
+ * Using H616 Mali-G31 Panfrost configuration directly
+ */
+&gpu {
+	mali-supply = <&reg_vcc3v3>;
+	status = "okay";
+};
+
+/*
+ * eMMC Storage Configuration
+ * HY300 uses mmc2 for internal eMMC (8GB/16GB variants)
+ */
+&mmc2 {
+	vmmc-supply = <&reg_vcc3v3>;
+	vqmmc-supply = <&reg_vcc3v3>;
+	cap-mmc-hw-reset;
+	non-removable;
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	bus-width = <8>;
+	status = "okay";
+};
+
+/*
+ * SD Card Configuration  
+ * HY300 supports microSD card expansion
+ */
+&mmc0 {
+	vmmc-supply = <&reg_vcc3v3>;
+	vqmmc-supply = <&reg_vcc3v3>;
+	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>; /* PF6 */
+	bus-width = <4>;
+	status = "okay";
+};
+
+/*
+ * USB Host Configuration
+ * HY300 has USB-A ports for external devices
+ */
+&ohci0 {
+	status = "okay";
+};
+
+&ohci1 {
+	status = "okay";
+};
+
+&ohci2 {
+	status = "okay";
+};
+
+&ohci3 {
+	status = "okay";
+};
+
+&ehci0 {
+	status = "okay";
+};
+
+&ehci1 {
+	status = "okay";
+};
+
+&ehci2 {
+	status = "okay";
+};
+
+&ehci3 {
+	status = "okay";
+};
+
+/*
+ * UART Configuration
+ * uart0 is the main serial console
+ */
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_ph_pins>;
+	status = "okay";
+};
+
+/*
+ * I2C Configuration
+ * Used for projector sensors and control
+ */
+&i2c0 {
+	status = "okay";
+	
+	/* Projector sensors and controls would be defined here */
+};
+
+&i2c1 {
+	status = "okay";
+};
+
+/*
+ * SPI Configuration  
+ * May be used for projector motor control
+ */
+&spi0 {
+	status = "okay";
+	
+	/* Projector motor controllers would be defined here */
+};
+
+/*
+ * Audio Configuration
+ * HY300 has built-in speakers and audio output
+ * Note: H616 has basic codec support, advanced audio features TBD
+ */
+&codec {
+	allwinner,audio-routing =
+		"Line Out", "LINEOUT";
+	status = "okay";
+};
+
+/*
+ * Display Configuration  
+ * H713 display engine support will be added in future phases
+ * H616 base doesn't include display engine nodes
+ * This requires additional H713-specific display driver work
+ */
+
+/*
+ * Thermal Sensor Configuration
+ * Critical for projector thermal management
+ */
+&ths {
+	status = "okay";
+	vref-supply = <&reg_vcc3v3>;
+};
+
+/*
+ * Power Management IC Configuration
+ * Note: HY300 may use different PMIC - needs hardware verification
+ */
+&r_rsb {
+	status = "okay";
+	
+	/* PMIC configuration would go here once identified */
+};
+
+/*
+ * GPIO Configuration
+ * Projector-specific GPIO assignments from factory DTB analysis
+ */
+&pio {
+	vcc-pa-supply = <&reg_vcc3v3>;
+	vcc-pb-supply = <&reg_vcc3v3>;
+	vcc-pc-supply = <&reg_vcc3v3>;
+	vcc-pd-supply = <&reg_vcc3v3>;
+	vcc-pe-supply = <&reg_vcc3v3>;
+	vcc-pf-supply = <&reg_vcc3v3>;
+	vcc-pg-supply = <&reg_vcc3v3>;
+	vcc-ph-supply = <&reg_vcc3v3>;
+	vcc-pi-supply = <&reg_vcc3v3>;
+};
+
+&r_pio {
+	vcc-pl-supply = <&reg_vcc3v3>;
+	vcc-pm-supply = <&reg_vcc3v3>;
+};
