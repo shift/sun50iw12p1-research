@@ -2,17 +2,19 @@
 result
 result-*
 
-# ROM images and firmware
+# ROM images and firmware binaries
 *.img
-*.bin
-*.fex
-*.dtb
+update.img
 boot0.bin
 boot1.bin
 system.img
 userdata.img
 recovery.img
-update.img
+
+# Extracted firmware directories (but allow analysis reports)
+firmware/*
+!firmware/*.md
+!firmware/README.md
 
 # Extracted firmware
 firmware/
