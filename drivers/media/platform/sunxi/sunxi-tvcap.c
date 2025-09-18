@@ -314,6 +314,105 @@ static int tvcap_clocks_init(struct sunxi_tvcap_dev *tvcap)
 ", TVCAP_CLK_COUNT);
 	return 0;
 }
+/*
+ * TV Capture Reset Line Management Functions
+ * Based on Task 022 hardware analysis: RST_BUS_TVCAP, RST_BUS_DISP, RST_BUS_DEMOD
+ */
+
+static int tvcap_resets_assert(struct sunxi_tvcap_dev *tvcap)
+{
+	int ret;
+
+	dev_dbg(tvcap->dev, "Asserting TV capture reset lines\n");
+
+	/* Assert all reset lines - this puts hardware into reset state */
+	ret = reset_control_bulk_assert(TVCAP_RST_COUNT, tvcap->resets);
+	if (ret) {
+		dev_err(tvcap->dev, "Failed to assert TV capture resets: %d\n", ret);
+		return ret;
+	}
+
+	/* Hold reset for minimum required time (from Task 022 timing analysis) */
+	usleep_range(10, 20);
+
+	dev_dbg(tvcap->dev, "TV capture reset lines asserted\n");
+	return 0;
+}
+
+static int tvcap_resets_deassert(struct sunxi_tvcap_dev *tvcap)
+{
+	int ret;
+
+	dev_dbg(tvcap->dev, "Deasserting TV capture reset lines\n");
+
+	/* Deassert reset lines in proper sequence - releases hardware from reset */
+	ret = reset_control_bulk_deassert(TVCAP_RST_COUNT, tvcap->resets);
+	if (ret) {
+		dev_err(tvcap->dev, "Failed to deassert TV capture resets: %d\n", ret);
+		return ret;
+	}
+
+	/* Allow hardware to stabilize after reset release */
+	usleep_range(100, 200);
+
+	dev_dbg(tvcap->dev, "TV capture reset lines deasserted\n");
+	return 0;
+}
+
+static int tvcap_resets_cycle(struct sunxi_tvcap_dev *tvcap)
+{
+	int ret;
+
+	dev_dbg(tvcap->dev, "Cycling TV capture reset lines\n");
+
+	/* Full reset cycle: assert -> wait -> deassert -> stabilize */
+	ret = tvcap_resets_assert(tvcap);
+	if (ret)
+		return ret;
+
+	ret = tvcap_resets_deassert(tvcap);
+	if (ret) {
+		/* If deassert fails, try to return to safe reset state */
+		tvcap_resets_assert(tvcap);
+		return ret;
+	}
+
+	dev_info(tvcap->dev, "TV capture reset cycle completed successfully\n");
+	return 0;
+}
+
+static int tvcap_resets_init(struct sunxi_tvcap_dev *tvcap)
+{
+	struct device *dev = tvcap->dev;
+	int ret, i;
+
+	/* Initialize reset control names (must match device tree reset-names) */
+	static const char * const reset_names[TVCAP_RST_COUNT] = {
+		"rst_bus_disp",      /* Display subsystem reset */
+		"rst_bus_tvcap",     /* TV capture bus reset */
+		"rst_bus_demod"      /* Demodulator reset */
+	};
+
+	/* Assign reset names to bulk data structure */
+	for (i = 0; i < TVCAP_RST_COUNT; i++)
+		tvcap->resets[i].id = reset_names[i];
+
+	/* Get all reset controls from device tree */
+	ret = devm_reset_control_bulk_get_shared(dev, TVCAP_RST_COUNT, 
+						 tvcap->resets);
+	if (ret) {
+		dev_err(dev, "Failed to get TV capture reset controls: %d\n", ret);
+		return ret;
+	}
+
+	dev_info(dev, "TV capture reset controls initialized: %d resets\n", TVCAP_RST_COUNT);
+	return 0;
+}
+
+/*
+ * Hardware interface functions with integrated reset and clock management
+ */
+
 
 /*
  * Hardware interface functions
@@ -323,13 +422,8 @@ static void tvcap_hw_reset(struct sunxi_tvcap_dev *tvcap)
 {
 	dev_dbg(tvcap->dev, "Resetting TV capture hardware\n");
 	
-	/* Assert all reset lines */
-	reset_control_bulk_assert(TVCAP_RST_COUNT, tvcap->resets);
-	usleep_range(10, 20);
-	
-	/* Deassert reset lines */
-	reset_control_bulk_deassert(TVCAP_RST_COUNT, tvcap->resets);
-	usleep_range(100, 200);
+	/* Use the enhanced reset cycle function */
+	tvcap_resets_cycle(tvcap);
 }
 
 static int tvcap_hw_init(struct sunxi_tvcap_dev *tvcap)
@@ -337,18 +431,30 @@ static int tvcap_hw_init(struct sunxi_tvcap_dev *tvcap)
 	u32 reg_val;
 	int ret;
 	
-	dev_dbg(tvcap->dev, "Initializing TV capture hardware\n");	/* Enable TV capture clocks */
-	ret = tvcap_clocks_enable(tvcap);
+	dev_dbg(tvcap->dev, "Initializing TV capture hardware\n");
+
+	/* Step 1: Assert reset lines before enabling clocks (critical timing) */
+	ret = tvcap_resets_assert(tvcap);
 	if (ret) {
-		dev_err(tvcap->dev, "Failed to enable TV capture clocks: %d
-", ret);
+		dev_err(tvcap->dev, "Failed to assert resets during init: %d\n", ret);
 		return ret;
 	}
+
+	/* Step 2: Enable TV capture clocks */
+	ret = tvcap_clocks_enable(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "Failed to enable TV capture clocks: %d\n", ret);
+		goto err_reset_cleanup;
+	}
 	
-	/* Reset hardware */
-	tvcap_hw_reset(tvcap);
+	/* Step 3: Deassert reset lines after clocks are stable */
+	ret = tvcap_resets_deassert(tvcap);
+	if (ret) {
+		dev_err(tvcap->dev, "Failed to deassert resets during init: %d\n", ret);
+		goto err_clocks_cleanup;
+	}
 	
-	/* Basic hardware initialization */
+	/* Step 4: Basic hardware initialization */
 	writel(0, tvcap->regs + TVTOP_CTRL_REG);
 	writel(0, tvcap->regs + TVTOP_IRQ_EN_REG);
 	
@@ -356,20 +462,31 @@ static int tvcap_hw_init(struct sunxi_tvcap_dev *tvcap)
 	reg_val = readl(tvcap->regs + TVTOP_IRQ_STATUS_REG);
 	writel(reg_val, tvcap->regs + TVTOP_IRQ_STATUS_REG);
 	
-	dev_info(tvcap->dev, "TV capture hardware initialized\n");
+	dev_info(tvcap->dev, "TV capture hardware initialized successfully\n");
 	return 0;
+
+err_clocks_cleanup:
+	tvcap_clocks_disable(tvcap);
+err_reset_cleanup:
+	/* Leave hardware in safe reset state */
+	tvcap_resets_assert(tvcap);
+	return ret;
 }
 
 static void tvcap_hw_cleanup(struct sunxi_tvcap_dev *tvcap)
 {
 	dev_dbg(tvcap->dev, "Cleaning up TV capture hardware\n");
 	
-	/* Disable interrupts */
+	/* Disable interrupts first */
 	writel(0, tvcap->regs + TVTOP_IRQ_EN_REG);
 	
-	/* Reset hardware */
-	tvcap_hw_reset(tvcap);	/* Disable TV capture clocks */
+	/* Assert reset lines to put hardware in safe state */
+	tvcap_resets_assert(tvcap);
+	
+	/* Disable clocks after hardware is in reset state */
 	tvcap_clocks_disable(tvcap);
+	
+	dev_dbg(tvcap->dev, "TV capture hardware cleanup completed\n");
 }
 
 /*
@@ -654,34 +771,17 @@ static int tvcap_init_resources(struct sunxi_tvcap_dev *tvcap)
 		return tvcap->irq;
 	}
 	
-	/* Initialize clock names - must match device tree clock-names */
-	static const char * const clk_names[TVCAP_CLK_COUNT] = {
-		"clk_bus_disp", "clk_bus_tvcap", "clk_bus_demod",
-		"cap_300m", "vincap_dma_clk", 
-		"hdmi_audio_bus", "hdmi_audio_clk"
-	};
-	
-	for (i = 0; i < TVCAP_CLK_COUNT; i++)
-		tvcap->clks[i].id = clk_names[i];
-	
-	ret = devm_clk_bulk_get(dev, TVCAP_CLK_COUNT, tvcap->clks);
+	/* Initialize clocks */
+	ret = tvcap_clocks_init(tvcap);
 	if (ret) {
-		dev_err(dev, "Failed to get clocks: %d\n", ret);
+		dev_err(dev, "Failed to initialize clocks: %d\n", ret);
 		return ret;
 	}
 	
-	/* Initialize reset names */
-	static const char * const reset_names[TVCAP_RST_COUNT] = {
-		"reset_bus_disp", "reset_bus_tvcap", "reset_bus_demod"
-	};
-	
-	for (i = 0; i < TVCAP_RST_COUNT; i++)
-		tvcap->resets[i].id = reset_names[i];
-	
-	ret = devm_reset_control_bulk_get_shared(dev, TVCAP_RST_COUNT, 
-						 tvcap->resets);
+	/* Initialize reset controls */
+	ret = tvcap_resets_init(tvcap);
 	if (ret) {
-		dev_err(dev, "Failed to get resets: %d\n", ret);
+		dev_err(dev, "Failed to initialize reset controls: %d\n", ret);
 		return ret;
 	}
 	
@@ -695,6 +795,7 @@ static int tvcap_init_resources(struct sunxi_tvcap_dev *tvcap)
 	
 	dev_info(dev, "Resources initialized successfully\n");
 	return 0;
+}
 }
 
 static int tvcap_init_v4l2(struct sunxi_tvcap_dev *tvcap)
