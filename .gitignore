@@ -24,6 +24,9 @@ extracted/
 u-boot/
 u-boot-sunxi-with-spl.bin
 u-boot.bin
+u-boot.dtb
+u-boot-spl.bin
+sunxi-spl.bin
 SPL
 
 # Kernel build artifacts

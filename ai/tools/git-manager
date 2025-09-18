@@ -1,0 +1,360 @@
+#!/usr/bin/env bash
+
+# HY300 Linux Porting Project - Git Management Tool
+# Automates git operations following project standards
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Project root directory
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$PROJECT_ROOT"
+
+usage() {
+    cat << EOF
+Git Management Tool for HY300 Linux Porting Project
+
+Usage: $0 <command> [options]
+
+Commands:
+    status          Show current git status with analysis
+    commit          Interactive commit with project standards
+    auto-commit     Automatic commit for task completion
+    validate        Validate repository state
+    backup          Create backup branch before major changes
+    clean           Clean untracked files (with confirmation)
+
+Options:
+    -h, --help      Show this help message
+    -v, --verbose   Verbose output
+    -f, --force     Force operation (where applicable)
+
+Examples:
+    $0 status                    # Show git status
+    $0 commit                    # Interactive commit
+    $0 auto-commit "Task 004"    # Auto-commit with task reference
+    $0 backup "before-uboot"     # Create backup branch
+    $0 validate                  # Check repo health
+
+Project Standards:
+- All documentation changes must be committed
+- No binaries in git (enforced by .gitignore)
+- Commit messages reference task numbers
+- Regular commits maintain project audit trail
+EOF
+}
+
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+check_git_repo() {
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        log_error "Not in a git repository"
+        exit 1
+    fi
+}
+
+analyze_changes() {
+    local staged_files unstaged_files untracked_files
+    
+    log_info "Analyzing repository changes..."
+    
+    # Get file counts
+    staged_files=$(git diff --cached --name-only | wc -l)
+    unstaged_files=$(git diff --name-only | wc -l)
+    untracked_files=$(git ls-files --others --exclude-standard | wc -l)
+    
+    echo "📊 Change Summary:"
+    echo "   Staged files: $staged_files"
+    echo "   Modified files: $unstaged_files"
+    echo "   Untracked files: $untracked_files"
+    
+    # Check for important file types
+    if git status --porcelain | grep -q "\.md$"; then
+        echo "📝 Documentation changes detected"
+    fi
+    
+    if git status --porcelain | grep -q "\.nix$"; then
+        echo "❄️  Nix configuration changes detected"
+    fi
+    
+    if git status --porcelain | grep -q "docs/tasks/"; then
+        echo "📋 Task documentation changes detected"
+    fi
+    
+    # Check for binaries that shouldn't be committed
+    if git status --porcelain | grep -E "\.(bin|img|elf|so|a)$"; then
+        log_warning "Binary files detected - ensure .gitignore is correct"
+    fi
+}
+
+cmd_status() {
+    check_git_repo
+    
+    log_info "Git Repository Status for HY300 Linux Porting Project"
+    echo "================================================="
+    
+    # Basic git status
+    git status
+    
+    echo ""
+    analyze_changes
+    
+    # Check for .direnv changes (which should be ignored)
+    if git status --porcelain | grep -q "\.direnv"; then
+        log_warning ".direnv changes detected - these should typically be ignored"
+    fi
+    
+    # Show recent commits
+    echo ""
+    echo "📋 Recent commits:"
+    git log --oneline -5
+}
+
+cmd_commit() {
+    check_git_repo
+    
+    log_info "Interactive commit process"
+    
+    # Show current status
+    analyze_changes
+    
+    # Check if there are staged changes
+    if [ "$(git diff --cached --name-only | wc -l)" -eq 0 ]; then
+        log_info "No staged changes. Staging relevant files..."
+        
+        # Auto-stage documentation and config files
+        git add README.md ai/ configs/ docs/ flake.nix AGENTS.md .gitignore 2>/dev/null || true
+        
+        # Stage firmware docs but not binaries
+        git add firmware/*.md 2>/dev/null || true
+    fi
+    
+    # Check if we have anything to commit
+    if [ "$(git diff --cached --name-only | wc -l)" -eq 0 ]; then
+        log_warning "No changes to commit"
+        return 0
+    fi
+    
+    echo ""
+    echo "📝 Files to be committed:"
+    git diff --cached --name-only | sed 's/^/   /'
+    
+    echo ""
+    read -p "Enter commit message (or press Enter for guided mode): " commit_msg
+    
+    if [ -z "$commit_msg" ]; then
+        # Guided commit message creation
+        echo ""
+        echo "🎯 Guided commit message creation"
+        echo "What type of change is this?"
+        echo "1) Task completion"
+        echo "2) Documentation update"
+        echo "3) Configuration change"
+        echo "4) Bug fix"
+        echo "5) Feature addition"
+        echo "6) Other"
+        
+        read -p "Choice (1-6): " choice
+        
+        case $choice in
+            1) 
+                read -p "Task number: " task_num
+                read -p "Brief description: " desc
+                commit_msg="Complete Task $task_num: $desc"
+                ;;
+            2)
+                read -p "Documentation area: " area
+                commit_msg="Update documentation: $area"
+                ;;
+            3)
+                read -p "Configuration description: " desc
+                commit_msg="Update configuration: $desc"
+                ;;
+            4)
+                read -p "Bug description: " desc
+                commit_msg="Fix: $desc"
+                ;;
+            5)
+                read -p "Feature description: " desc
+                commit_msg="Add: $desc"
+                ;;
+            *)
+                read -p "Custom commit message: " commit_msg
+                ;;
+        esac
+    fi
+    
+    # Create the commit
+    git commit -m "$commit_msg"
+    log_success "Commit created successfully"
+}
+
+cmd_auto_commit() {
+    local task_ref="$1"
+    check_git_repo
+    
+    log_info "Auto-committing changes for $task_ref"
+    
+    # Stage relevant files
+    git add README.md ai/ configs/ docs/ flake.nix AGENTS.md .gitignore 2>/dev/null || true
+    git add firmware/*.md 2>/dev/null || true
+    
+    # Check if we have anything to commit
+    if [ "$(git diff --cached --name-only | wc -l)" -eq 0 ]; then
+        log_warning "No changes to commit"
+        return 0
+    fi
+    
+    # Create automatic commit message
+    local staged_count=$(git diff --cached --name-only | wc -l)
+    local commit_msg="Auto-commit: $task_ref progress ($staged_count files updated)"
+    
+    git commit -m "$commit_msg"
+    log_success "Auto-commit completed for $task_ref"
+}
+
+cmd_validate() {
+    check_git_repo
+    
+    log_info "Validating repository state"
+    
+    local issues=0
+    
+    # Check for unstaged documentation changes
+    if git diff --name-only | grep -q "\.md$"; then
+        log_warning "Unstaged documentation changes detected"
+        issues=$((issues + 1))
+    fi
+    
+    # Check for binary files in git
+    if git ls-files | grep -E "\.(bin|img|elf|so|a)$"; then
+        log_error "Binary files found in git repository"
+        issues=$((issues + 1))
+    fi
+    
+    # Check for large files
+    local large_files=$(git ls-files | xargs -I{} sh -c 'if [ -f "{}" ] && [ $(stat -c%s "{}") -gt 1048576 ]; then echo "{}"; fi')
+    if [ -n "$large_files" ]; then
+        log_warning "Large files (>1MB) in repository:"
+        echo "$large_files" | sed 's/^/   /'
+        issues=$((issues + 1))
+    fi
+    
+    # Check .gitignore coverage
+    if [ ! -f .gitignore ]; then
+        log_error ".gitignore file missing"
+        issues=$((issues + 1))
+    fi
+    
+    if [ $issues -eq 0 ]; then
+        log_success "Repository validation passed"
+    else
+        log_warning "Repository validation found $issues issues"
+        return 1
+    fi
+}
+
+cmd_backup() {
+    local backup_name="$1"
+    check_git_repo
+    
+    log_info "Creating backup branch: backup-$backup_name"
+    
+    # Create backup branch from current HEAD
+    git branch "backup-$backup_name" HEAD
+    
+    log_success "Backup branch 'backup-$backup_name' created"
+    log_info "To switch back: git checkout backup-$backup_name"
+}
+
+cmd_clean() {
+    check_git_repo
+    
+    log_info "Analyzing untracked files for cleanup"
+    
+    # Show what would be cleaned
+    local untracked_files=$(git clean -n | wc -l)
+    
+    if [ $untracked_files -eq 0 ]; then
+        log_info "No untracked files to clean"
+        return 0
+    fi
+    
+    echo "🗑️  Files that would be removed:"
+    git clean -n
+    
+    echo ""
+    read -p "Are you sure you want to remove these files? (y/N): " confirm
+    
+    if [[ $confirm =~ ^[Yy]$ ]]; then
+        git clean -f
+        log_success "Untracked files cleaned"
+    else
+        log_info "Cleanup cancelled"
+    fi
+}
+
+# Main command dispatcher
+case "${1:-}" in
+    status)
+        cmd_status
+        ;;
+    commit)
+        cmd_commit
+        ;;
+    auto-commit)
+        if [ -z "${2:-}" ]; then
+            log_error "auto-commit requires a task reference"
+            usage
+            exit 1
+        fi
+        cmd_auto_commit "$2"
+        ;;
+    validate)
+        cmd_validate
+        ;;
+    backup)
+        if [ -z "${2:-}" ]; then
+            log_error "backup requires a name"
+            usage
+            exit 1
+        fi
+        cmd_backup "$2"
+        ;;
+    clean)
+        cmd_clean
+        ;;
+    -h|--help|help)
+        usage
+        ;;
+    "")
+        log_error "No command specified"
+        usage
+        exit 1
+        ;;
+    *)
+        log_error "Unknown command: $1"
+        usage
+        exit 1
+        ;;
+esac
