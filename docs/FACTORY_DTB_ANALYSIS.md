@@ -2,7 +2,23 @@
 
 **Status:** REVISED - Technical claims verified against actual DTB files  
 **Date:** 2025-09-18  
-**Source Files:** Four device tree files from firmware/update.img.extracted/
+**Source Files:** Four device tree files from `firmware/update.img.extracted/` (binary DTB format)
+
+## Factory DTB File Locations
+
+The factory device tree blob files are located at:
+```
+firmware/update.img.extracted/FC00/system.dtb      (3064 lines when decompiled)
+firmware/update.img.extracted/1EAC00/system.dtb    (3064 lines when decompiled)  
+firmware/update.img.extracted/16815C/system.dtb    (921 lines when decompiled)
+firmware/update.img.extracted/C755C/system.dtb     (921 lines when decompiled)
+```
+
+**Note:** These are binary DTB files. To analyze their contents, use:
+```bash
+dtc -I dtb -O dts <dtb_file> | wc -l    # Count decompiled lines
+dtc -I dtb -O dts <dtb_file>            # View full decompiled content
+```
 
 ---
 
@@ -24,14 +40,14 @@ The analysis provides concrete memory mappings, GPIO assignments, and peripheral
 
 ### File Classification
 
-| File | Size | MIPS Loader | GPU Support | Classification |
-|------|------|-------------|-------------|---------------|
-| 16815C/system.dtb | 921 lines | NO | NO | Basic Configuration |
-| C755C/system.dtb  | 921 lines | NO | NO | Basic Configuration |
-| 1EAC00/system.dtb | 3064 lines | YES | YES | Full Configuration |
-| FC00/system.dtb   | 3064 lines | YES | YES | Full Configuration |
+| DTB File Path | Decompiled Size | MIPS Loader | GPU Support | Classification |
+|---------------|-----------------|-------------|-------------|---------------|
+| firmware/update.img.extracted/16815C/system.dtb | 921 lines | NO | NO | Basic Configuration |
+| firmware/update.img.extracted/C755C/system.dtb  | 921 lines | NO | NO | Basic Configuration |
+| firmware/update.img.extracted/1EAC00/system.dtb | 3064 lines | YES | YES | Full Configuration |
+| firmware/update.img.extracted/FC00/system.dtb   | 3064 lines | YES | YES | Full Configuration |
 
-**Source:** Direct analysis of DTB file line counts and component presence
+**Source:** Direct analysis of DTB file line counts and component presence using `dtc -I dtb -O dts`
 
 ### Core System Identification
 
@@ -41,7 +57,7 @@ model = "sun50iw12";
 compatible = "allwinner,tv303", "arm,sun50iw12p1";
 ```
 
-**Source:** Lines 7-8 in FC00/system.dtb, identical across all four files
+**Source:** Lines 7-8 in `firmware/update.img.extracted/FC00/system.dtb` (decompiled), identical across all four files
 
 This confirms:
 - **SoC Model:** Allwinner H713 (internal designation: sun50iw12p1)
@@ -66,7 +82,7 @@ gpu@0x01800000 {
 }
 ```
 
-**Source:** FC00/system.dtb lines 1854-1866
+**Source:** `firmware/update.img.extracted/FC00/system.dtb` lines 1854-1866 (decompiled)
 
 **Technical Corrections:**
 - **GPU Family:** ARM Mali-Midgard architecture family
@@ -97,7 +113,7 @@ mipsloader@3061000 {
 }
 ```
 
-**Source:** FC00/system.dtb lines 2859-2870
+**Source:** `firmware/update.img.extracted/FC00/system.dtb` lines 2859-2870 (decompiled)
 
 ### Reserved Memory Regions
 
@@ -113,7 +129,7 @@ decd {
 };
 ```
 
-**Source:** FC00/system.dtb lines 1065-1072
+**Source:** `firmware/update.img.extracted/FC00/system.dtb` lines 1065-1072 (decompiled)
 
 **Memory Layout Analysis:**
 - **MIPS Loader Base:** 0x4b100000 (1.254GB)
@@ -129,7 +145,7 @@ Present in full configurations only:
 - **tvtop@5700000** - TV top-level controller
 - **dtmb@6600000** - Digital TV broadcast support
 
-**Source:** FC00/system.dtb alias definitions lines 3021-3024
+**Source:** `firmware/update.img.extracted/FC00/system.dtb` alias definitions lines 3021-3024 (decompiled)
 
 ---
 
@@ -146,7 +162,7 @@ Present in full configurations only:
 | TV Display | 0x05000000 | TBD | Display controller |
 | TV Capture | 0x06800000 | TBD | Video capture |
 
-**Source:** Register addresses extracted from FC00/system.dtb
+**Source:** Register addresses extracted from `firmware/update.img.extracted/FC00/system.dtb` (decompiled)
 
 ---
 
@@ -175,7 +191,7 @@ All configurations include comprehensive pin control definitions with specific G
 - **MIPS JTAG:** PD8, PD9, PH8, PH9 for hardware debugging
 - **Power Control:** Various GPIO pins for component power management
 
-**Source:** FC00/system.dtb pinctrl definitions lines 1600-1700
+**Source:** `firmware/update.img.extracted/FC00/system.dtb` pinctrl definitions lines 1600-1700 (decompiled)
 
 ---
 
@@ -234,15 +250,17 @@ Based on concrete DTB analysis:
 ## References
 
 **Primary Sources:**
-- FC00/system.dtb - Full configuration DTB (3064 lines)
-- 1EAC00/system.dtb - Full configuration DTB (3064 lines)  
-- 16815C/system.dtb - Basic configuration DTB (921 lines)
-- C755C/system.dtb - Basic configuration DTB (921 lines)
+- `firmware/update.img.extracted/FC00/system.dtb` - Full configuration DTB (3064 lines when decompiled)
+- `firmware/update.img.extracted/1EAC00/system.dtb` - Full configuration DTB (3064 lines when decompiled)  
+- `firmware/update.img.extracted/16815C/system.dtb` - Basic configuration DTB (921 lines when decompiled)
+- `firmware/update.img.extracted/C755C/system.dtb` - Basic configuration DTB (921 lines when decompiled)
+
+**File Format:** Binary Device Tree Blob (DTB) files, analyzed using `dtc -I dtb -O dts` for decompilation
 
 **Analysis Tools:**
-- Direct DTB file examination
-- grep-based component extraction
+- Device Tree Compiler (`dtc -I dtb -O dts` for binary-to-source conversion)
+- grep-based component extraction from decompiled source
 - Line-by-line configuration comparison
-- Memory mapping verification
+- Memory mapping verification against decompiled DTB content
 
 **Verification Method:** All technical claims verified against actual DTB file content with specific line references provided.

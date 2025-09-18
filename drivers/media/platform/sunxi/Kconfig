@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+config VIDEO_SUNXI_TVCAP
+	tristate "Allwinner TV Capture V4L2 Driver"
+	depends on VIDEO_DEV && ARCH_SUNXI
+	depends on COMMON_CLK && RESET_CONTROLLER
+	select VIDEOBUF2_DMA_CONTIG
+	select V4L2_MEM2MEM_DEV
+	help
+	  Support for Allwinner H713 TV capture interface for HDMI input.
+	  This driver provides V4L2 video capture device for HDMI input
+	  signal capture with MIPS co-processor coordination.
+
+	  This driver is specifically designed for the HY300 Android projector
+	  hardware with H713 SoC and implements TV capture functionality
+	  based on comprehensive factory firmware analysis.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called sunxi-tvcap.

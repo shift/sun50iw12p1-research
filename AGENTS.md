@@ -138,11 +138,12 @@ When delegating atomic tasks, always include in the initial prompt:
 10. **Integration Points**: How this atomic task fits into the larger work stream
 
 #### Critical File Editing Rules for Delegated Agents
-**MANDATORY for all delegated agents:**
-- **NEVER use Edit tool on .c files** - C files must use patch-based editing due to length limitations
-- **Create patches instead** - Use bash commands to create patch files for C file modifications
+**MANDATORY for all delegated agents - SESSION-CRITICAL RULE:**
+- **ABSOLUTELY FORBIDDEN: Never use Edit tool on ANY .c files** - This WILL crash the session due to file size limitations (all .c files exceed edit tool limits)
+- **MANDATORY: Use patch-based editing for ALL C files** - Use bash commands to create patch files for ALL C file modifications
+- **No exceptions**: Even small changes to .c files must use patches to prevent session crashes
 - **Apply patches cleanly** - Verify patches apply without errors before proceeding
-- **Test compilation** - Always verify changes compile successfully before completion
+- **Test compilation** - Always verify changes compile successfully after patch application
 - **Commit modified files only** - Commit the updated .c files, never commit the patch files themselves
 - **Document changes** - Include clear descriptions of what the modifications accomplish
 
@@ -163,12 +164,13 @@ This is a hardware porting project to run mainline Linux on the HY300 Android pr
 
 **CODING STANDARDS:**
 - NEVER mock, stub, or simulate code - implement complete solutions
-- **CRITICAL: C FILES MUST USE PATCH-BASED EDITING** - Never use Edit tool on .c files, always create patches due to file length limitations
+- **SESSION-CRITICAL: ABSOLUTELY FORBIDDEN to use Edit tool on .c files** - This WILL crash sessions due to file size limitations
+- **MANDATORY: All .c file changes must use patch-based editing** - create patches with bash commands, apply with patch command
 - Always run available tests before completion
 - Follow existing codebase conventions
 
-**MANDATORY C FILE EDITING RULES:**
-- **NEVER use Edit tool on any .c files** - they are too large and will cause errors
+**MANDATORY C FILE EDITING RULES - PREVENT SESSION CRASHES:**
+- **ABSOLUTELY FORBIDDEN: Never use Edit tool on ANY .c files** - This WILL terminate the session due to file size limits
 - **ALWAYS create patches instead** - use bash commands like: diff -u original.c modified.c > changes.patch
 - **Apply patches cleanly** - use: patch -p0 < changes.patch and verify no errors
 - **Test compilation after changes** - verify your modifications compile successfully
@@ -268,7 +270,7 @@ nix develop -c -- <command>
 - Always commit documentation and code changes
 - Reference task numbers in commit messages
 - Never commit binaries or test scripts unless part of testing framework
-- **C file editing**: Use patch-based approach for large C files to avoid edit tool limitations
+- **SESSION-CRITICAL: All .c files are FORBIDDEN from Edit tool** - Never use Edit tool on .c files due to length limitations that crash sessions
 
 ### 6. Hardware Safety Protocol
 **Always follow safe development practices:**
@@ -371,7 +373,7 @@ nix develop -c -- <command>
 - Implement complete, working solutions
 - Include comprehensive error handling
 - Document complex technical decisions
-- **CRITICAL: C files MUST use patch-based editing** - Never use Edit tool on .c files due to length limitations
+- **SESSION-CRITICAL: .c files MUST use patch-based editing ONLY** - Never use Edit tool on .c files due to length limitations that crash sessions
 
 ### Testing Requirements
 - Run all available tests before task completion
@@ -391,7 +393,7 @@ nix develop -c -- <command>
 - Maintain technical accuracy in all documentation
 - Include implementation details for future reference
 - Document known issues and workarounds
-- **C code changes**: When modifying C files, document changes in patch format for clarity and reviewability
+- **SESSION-CRITICAL: All .c file modifications MUST use patches** - Edit tool on .c files crashes sessions due to file size limits - no exceptions
 
 ## Emergency Procedures
 
