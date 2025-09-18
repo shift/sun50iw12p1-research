@@ -141,8 +141,10 @@ When delegating atomic tasks, always include in the initial prompt:
 **MANDATORY for all delegated agents:**
 - **NEVER use Edit tool on .c files** - C files must use patch-based editing due to length limitations
 - **Create patches instead** - Use bash commands to create patch files for C file modifications
+- **Apply patches cleanly** - Verify patches apply without errors before proceeding
 - **Test compilation** - Always verify changes compile successfully before completion
-- **Document changes** - Include clear descriptions of what the patches accomplish
+- **Commit modified files only** - Commit the updated .c files, never commit the patch files themselves
+- **Document changes** - Include clear descriptions of what the modifications accomplish
 
 #### Context Content Inclusion Strategy
 **COPY RELEVANT CONTEXT DIRECTLY INTO PROMPT** - do not reference files the agent should read:
@@ -168,8 +170,10 @@ This is a hardware porting project to run mainline Linux on the HY300 Android pr
 **MANDATORY C FILE EDITING RULES:**
 - **NEVER use Edit tool on any .c files** - they are too large and will cause errors
 - **ALWAYS create patches instead** - use bash commands like: diff -u original.c modified.c > changes.patch
+- **Apply patches cleanly** - use: patch -p0 < changes.patch and verify no errors
 - **Test compilation after changes** - verify your modifications compile successfully
-- **Document what your patches do** - include clear descriptions of the changes
+- **Commit the modified files** - commit the updated .c files, NOT the patch files
+- **Document what your changes do** - include clear descriptions in commit messages
 
 **GIT REQUIREMENTS:**
 - Commit all changes with format: [Task ###] Brief description
