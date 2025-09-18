@@ -1,0 +1,81 @@
+# Build outputs
+result
+result-*
+
+# ROM images and firmware
+*.img
+*.bin
+*.fex
+*.dtb
+boot0.bin
+boot1.bin
+system.img
+userdata.img
+recovery.img
+update.img
+
+# Extracted firmware
+firmware/
+extracted/
+*_extracted/
+
+# U-Boot build artifacts
+u-boot/
+u-boot-sunxi-with-spl.bin
+u-boot.bin
+SPL
+
+# Kernel build artifacts
+linux/
+arch/*/boot/
+vmlinux
+System.map
+Module.symvers
+modules.builtin
+modules.order
+*.ko
+*.o
+*.cmd
+.tmp_versions/
+
+# Cross-compilation artifacts
+*.a
+*.so
+*.elf
+
+# Backup files
+backup_*.img
+emmc_backup.img
+nand_backup.img
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Editor files
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+serial_output.txt
+
+# Test scripts (unless part of testing framework)
+test_*.sh
+quick_test.py
+
+# Device-specific generated files
+sun50i-h713-hy300.dts
+hy300_h713_defconfig
+
+# Analysis output
+binwalk_output/
+strings_output.txt
+hexdump_output.txt
