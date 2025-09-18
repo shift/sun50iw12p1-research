@@ -995,7 +995,7 @@ static int tvcap_init_resources(struct sunxi_tvcap_dev *tvcap)
 	
 	/* Request interrupt */
 	ret = devm_request_irq(dev, tvcap->irq, tvcap_irq_handler, 
-			       IRQF_SHARED, SUNXI_TVCAP_NAME, tvcap);
+			       IRQF_SHARED | IRQF_TRIGGER_HIGH, SUNXI_TVCAP_NAME, tvcap);
 	if (ret) {
 		dev_err(dev, "Failed to request interrupt: %d\n", ret);
 		return ret;
