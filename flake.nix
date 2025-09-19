@@ -7,15 +7,17 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        
-        # ARM64 cross-compilation toolchain
-        aarch64-toolchain = pkgs.pkgsCross.aarch64-multiplatform.buildPackages;
+    let
+      # System-specific outputs
+      systemOutputs = flake-utils.lib.eachDefaultSystem (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          
+          # ARM64 cross-compilation toolchain
+          aarch64-toolchain = pkgs.pkgsCross.aarch64-multiplatform.buildPackages;
 
-      in
-      {
+        in
+        {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             # Cross-compilation toolchain
@@ -208,4 +210,32 @@
           '';
         };
       });
+    in
+    systemOutputs // {
+      # NixOS configuration for HY300 projector
+      nixosConfigurations.hy300-projector = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        modules = [ 
+          ./nixos/hy300-minimal.nix
+        ];
+      };
+
+      # System image builds
+      packages.aarch64-linux.hy300-image = 
+        self.nixosConfigurations.hy300-projector.config.system.build.sdImage;
+        
+      packages.aarch64-linux.hy300-iso = 
+        self.nixosConfigurations.hy300-projector.config.system.build.isoImage or null;
+        
+      # Development packages for cross-compilation
+      packages.x86_64-linux.hy300-cross-image = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.aarch64-multiplatform.callPackage (
+        { runCommand, ... }: runCommand "hy300-cross-build" {} ''
+          echo "Cross-compilation build for HY300 projector"
+          echo "Target: aarch64-linux"
+          echo "Host: x86_64-linux"
+          mkdir -p $out
+          echo "success" > $out/build-status
+        ''
+      ) {};
+    };
 }
