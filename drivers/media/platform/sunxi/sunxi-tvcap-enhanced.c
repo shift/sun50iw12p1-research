@@ -36,6 +36,17 @@
 #include <media/videobuf2-dma-contig.h>
 #include <media/v4l2-mem2mem.h>
 
+/* HDMI format information structure - from sunxi-cpu-comm.c */
+struct hdmi_format_info {
+	u32 width;
+	u32 height;
+	u32 refresh_rate;
+	u32 pixel_format;
+	u32 color_space;
+	u32 quantization;
+	u32 transfer_func;
+};
+
 #define SUNXI_TVCAP_NAME "sunxi-tvcap-enhanced"
 #define SUNXI_TVCAP_VERSION KERNEL_VERSION(2, 0, 0)
 
@@ -104,6 +115,10 @@ enum tvcap_resets {
 #define TVCAP_HW_CAP_IOMMU          BIT(2)  /* IOMMU support available */
 #define TVCAP_HW_CAP_ZERO_COPY      BIT(3)  /* Zero-copy buffer sharing */
 
+/* HDMI input definitions */
+#define TVCAP_INPUT_HDMI	0
+#define TVCAP_NUM_INPUTS	1
+
 /* Enhanced Device structure with dual capture/output support */
 struct sunxi_tvcap_dev {
 	struct v4l2_device v4l2_dev;
@@ -135,6 +150,7 @@ struct sunxi_tvcap_dev {
 	struct v4l2_format format_out;        /* Output format */
 	struct v4l2_input input;
 	bool hdmi_connected;
+	unsigned int current_input;           /* Current selected input */
 	bool signal_detected;
 	bool streaming_cap;                   /* Capture streaming state */
 	bool streaming_out;                   /* Output streaming state */
@@ -225,6 +241,11 @@ static inline void tvtop_clear_bits(struct sunxi_tvcap_dev *tvcap, u32 reg, u32 
 	u32 val = tvtop_read(tvcap, reg);
 	tvtop_write(tvcap, reg, val & ~bits);
 }
+
+/* External HDMI functions from sunxi-cpu-comm.c */
+extern int sunxi_cpu_comm_hdmi_detect_exported(void);
+extern int sunxi_cpu_comm_hdmi_read_edid_exported(u8 *edid_buffer, size_t buffer_size);
+extern int sunxi_cpu_comm_hdmi_get_format_exported(struct hdmi_format_info *format);
 
 /*
  * IOMMU Integration Functions
@@ -774,6 +795,193 @@ static int tvcap_try_fmt_vid_out(struct file *file, void *priv,
 {
 	return tvcap_try_fmt_vid_cap(file, priv, f);
 }
+/*
+ * HDMI Input Management Functions (Tasks 3.4-3.5)
+ */
+
+static int tvcap_enum_input(struct file *file, void *priv, struct v4l2_input *input)
+{
+	struct sunxi_tvcap_dev *dev = video_drvdata(file);
+	
+	if (input->index >= TVCAP_NUM_INPUTS)
+		return -EINVAL;
+		
+	switch (input->index) {
+	case TVCAP_INPUT_HDMI:
+		strscpy(input->name, "HDMI Input", sizeof(input->name));
+		input->type = V4L2_INPUT_TYPE_CAMERA;
+		input->capabilities = V4L2_IN_CAP_DV_TIMINGS | V4L2_IN_CAP_EDID;
+		input->status = 0;
+		
+		/* Check HDMI connection status via MIPS communication */
+		if (sunxi_cpu_comm_hdmi_detect_exported() > 0) {
+			dev->hdmi_connected = true;
+		} else {
+			dev->hdmi_connected = false;
+			input->status |= V4L2_IN_ST_NO_SIGNAL;
+		}
+		
+		dev_dbg(dev->dev, "HDMI input enumerated, connected: %s\n",
+			dev->hdmi_connected ? "yes" : "no");
+		break;
+		
+	default:
+		return -EINVAL;
+	}
+	
+	return 0;
+}
+
+static int tvcap_g_input(struct file *file, void *priv, unsigned int *index)
+{
+	struct sunxi_tvcap_dev *dev = video_drvdata(file);
+	
+	*index = dev->current_input;
+	dev_dbg(dev->dev, "Get input: %u\n", *index);
+	
+	return 0;
+}
+
+static int tvcap_s_input(struct file *file, void *priv, unsigned int index)
+{
+	struct sunxi_tvcap_dev *dev = video_drvdata(file);
+	
+	if (index >= TVCAP_NUM_INPUTS)
+		return -EINVAL;
+		
+	if (index == dev->current_input)
+		return 0;
+		
+	/* For HDMI input, verify connection via MIPS */
+	if (index == TVCAP_INPUT_HDMI) {
+		int hdmi_status = sunxi_cpu_comm_hdmi_detect_exported();
+		if (hdmi_status <= 0) {
+			dev_warn(dev->dev, "Cannot switch to HDMI: no signal detected\n");
+			return -ENODEV;
+		}
+		dev->hdmi_connected = true;
+	}
+	
+	dev->current_input = index;
+	dev_info(dev->dev, "Input switched to: %u (%s)\n", 
+		 index, index == TVCAP_INPUT_HDMI ? "HDMI" : "Unknown");
+	
+	return 0;
+}
+
+static int tvcap_g_edid(struct file *file, void *fh, struct v4l2_edid *edid)
+{
+	struct sunxi_tvcap_dev *dev = video_drvdata(file);
+	u8 edid_buffer[256];
+	int bytes_read;
+	
+	if (edid->pad != 0)
+		return -EINVAL;
+		
+	if (dev->current_input != TVCAP_INPUT_HDMI) {
+		dev_warn(dev->dev, "EDID read requested but HDMI input not selected\n");
+		return -EINVAL;
+	}
+	
+	if (!dev->hdmi_connected) {
+		dev_warn(dev->dev, "EDID read requested but HDMI not connected\n");
+		return -ENODEV;
+	}
+	
+	/* Read EDID via MIPS communication */
+	bytes_read = sunxi_cpu_comm_hdmi_read_edid_exported(edid_buffer, sizeof(edid_buffer));
+	if (bytes_read <= 0) {
+		dev_err(dev->dev, "Failed to read EDID from HDMI source: %d\n", bytes_read);
+		return bytes_read;
+	}
+	
+	/* Copy EDID data to user buffer */
+	if (edid->blocks == 0) {
+		edid->blocks = bytes_read / 128;
+		return 0;
+	}
+	
+	if (edid->start_block * 128 >= bytes_read) {
+		dev_warn(dev->dev, "EDID start block %u beyond available data\n", edid->start_block);
+		return -EINVAL;
+	}
+	
+	edid->blocks = min_t(u32, edid->blocks, (bytes_read / 128) - edid->start_block);
+	
+	if (copy_to_user(edid->edid, 
+			 edid_buffer + (edid->start_block * 128),
+			 edid->blocks * 128)) {
+		dev_err(dev->dev, "Failed to copy EDID to user buffer\n");
+		return -EFAULT;
+	}
+	
+	dev_info(dev->dev, "EDID read successfully: %u blocks from block %u\n",
+		 edid->blocks, edid->start_block);
+		 
+	return 0;
+}
+
+static int tvcap_s_edid(struct file *file, void *fh, struct v4l2_edid *edid)
+{
+	/* EDID setting not supported for input capture */
+	return -ENOTTY;
+}
+
+static int tvcap_query_dv_timings(struct file *file, void *fh, struct v4l2_dv_timings *timings)
+{
+	struct sunxi_tvcap_dev *dev = video_drvdata(file);
+	struct hdmi_format_info format;
+	int ret;
+	
+	if (dev->current_input != TVCAP_INPUT_HDMI) {
+		dev_warn(dev->dev, "DV timings query requested but HDMI input not selected\n");
+		return -EINVAL;
+	}
+	
+	if (!dev->hdmi_connected) {
+		dev_warn(dev->dev, "DV timings query requested but HDMI not connected\n");
+		return -ENODEV;
+	}
+	
+	/* Get current HDMI format via MIPS communication */
+	ret = sunxi_cpu_comm_hdmi_get_format_exported(&format);
+	if (ret < 0) {
+		dev_err(dev->dev, "Failed to get HDMI format: %d\n", ret);
+		return ret;
+	}
+	
+	/* Convert HDMI format to V4L2 DV timings */
+	memset(timings, 0, sizeof(*timings));
+	timings->type = V4L2_DV_BT_656_1120;
+	
+	timings->bt.width = format.width;
+	timings->bt.height = format.height;
+	timings->bt.pixelclock = format.width * format.height * format.refresh_rate;
+	
+	/* Set standard timing parameters based on resolution */
+	if (format.width == 1920 && format.height == 1080) {
+		/* 1080p timing */
+		timings->bt.hfrontporch = 88;
+		timings->bt.hsync = 44;
+		timings->bt.hbackporch = 148;
+		timings->bt.vfrontporch = 4;
+		timings->bt.vsync = 5;
+		timings->bt.vbackporch = 36;
+	} else if (format.width == 1280 && format.height == 720) {
+		/* 720p timing */
+		timings->bt.hfrontporch = 110;
+		timings->bt.hsync = 40;
+		timings->bt.hbackporch = 220;
+		timings->bt.vfrontporch = 5;
+		timings->bt.vsync = 5;
+		timings->bt.vbackporch = 20;
+	}
+	
+	dev_info(dev->dev, "DV timings: %ux%u@%u, pixelclock=%llu\n",
+		 format.width, format.height, format.refresh_rate, timings->bt.pixelclock);
+		 
+	return 0;
+}
 
 static const struct v4l2_ioctl_ops tvcap_ioctl_ops_cap = {
 	.vidioc_querycap        = tvcap_querycap,
@@ -787,6 +995,14 @@ static const struct v4l2_ioctl_ops tvcap_ioctl_ops_cap = {
 	.vidioc_dqbuf           = vb2_ioctl_dqbuf,
 	.vidioc_streamon        = vb2_ioctl_streamon,
 	.vidioc_streamoff       = vb2_ioctl_streamoff,
+	
+	/* Input management for HDMI switching */
+	.vidioc_enum_input      = tvcap_enum_input,
+	.vidioc_g_input         = tvcap_g_input,
+	.vidioc_s_input         = tvcap_s_input,
+	.vidioc_g_edid          = tvcap_g_edid,
+	.vidioc_s_edid          = tvcap_s_edid,
+	.vidioc_query_dv_timings = tvcap_query_dv_timings,
 };
 
 static const struct v4l2_ioctl_ops tvcap_ioctl_ops_out = {
@@ -1002,6 +1218,10 @@ static int sunxi_tvcap_probe(struct platform_device *pdev)
 	spin_lock_init(&tvcap->irq_lock);
 	INIT_LIST_HEAD(&tvcap->buf_list_cap);
 	INIT_LIST_HEAD(&tvcap->buf_list_out);
+	
+	/* Initialize input management */
+	tvcap->current_input = TVCAP_INPUT_HDMI;
+	tvcap->hdmi_connected = false;
 	
 	/* Initialize enhanced resources */
 	ret = tvcap_init_resources_enhanced(tvcap);
