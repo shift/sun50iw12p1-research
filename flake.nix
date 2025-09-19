@@ -261,12 +261,8 @@
            modules = [
              ({ config, pkgs, ... }: 
              let
-               # HY300 Keystone Service embedded package
-               hy300-keystone-service = pkgs.stdenv.mkDerivation {
-                 pname = "hy300-keystone";
-                 version = "1.0.0";
-                 
-                 src = pkgs.writeText "keystone.py" ''
+                # HY300 Keystone Service embedded package
+                hy300-keystone-service = pkgs.writeScriptBin "hy300-keystone" ''
                    #!/usr/bin/env python3
                    """
                    HY300 Keystone Correction Service
@@ -408,28 +404,10 @@
                    
                    if __name__ == "__main__":
                        main()
-                 '';
-                 
-                 buildInputs = [ pkgs.python3 ];
-                 
-                 installPhase = ''
-                   mkdir -p $out/bin
-                   cp $src $out/bin/hy300-keystone
-                   chmod +x $out/bin/hy300-keystone
-                 '';
-                 
-                 meta = with pkgs.lib; {
-                   description = "Simple HY300 keystone correction service";
-                   license = licenses.mit;
-                 };
-               };
+                '';
 
-               # HY300 WiFi Service embedded package  
-               hy300-wifi-service = pkgs.stdenv.mkDerivation {
-                 pname = "hy300-wifi";
-                 version = "1.0.0";
-                 
-                 src = pkgs.writeText "wifi-manager.py" ''
+                # HY300 WiFi Service embedded package  
+                hy300-wifi-service = pkgs.writeScriptBin "hy300-wifi" ''
                    #!/usr/bin/env python3
                    """
                    HY300 WiFi Management Service
@@ -589,22 +567,8 @@
                    
                    if __name__ == "__main__":
                        main()
-                 '';
-                 
-                 buildInputs = [ pkgs.python3 pkgs.networkmanager ];
-                 
-                 installPhase = ''
-                   mkdir -p $out/bin
-                   cp $src $out/bin/hy300-wifi
-                   chmod +x $out/bin/hy300-wifi
-                 '';
-                 
-                 meta = with pkgs.lib; {
-                   description = "Simple HY300 WiFi management service";
-                   license = licenses.mit;
-                 };
-               };
-             in
+                '';
+              in
              {
               system.stateVersion = "24.05";
               
