@@ -446,6 +446,41 @@
 		};
 
 		/*
+		 * Video Engine - CedarX VPU
+		 * Hardware video decoding for H.264, H.265, VP8, VP9
+		 * Based on H6 video engine with H713 enhancements
+		 */
+		ve: video-codec@1c0e000 {
+			compatible = "allwinner,sun50i-h6-video-engine";
+			reg = <0x01c0e000 0x2000>;
+			clocks = <&ccu 33>, <&ccu 32>, <&ccu 53>; /* CLK_BUS_VE, CLK_VE, CLK_MBUS_VE */
+			clock-names = "ahb", "mod", "ram";
+			resets = <&ccu 7>; /* RST_BUS_VE */
+			interrupts = <0 89 4>; /* GIC_SPI 89 IRQ_TYPE_LEVEL_HIGH */
+			allwinner,sram = <&ve_sram 1>;
+			status = "okay";
+		};
+
+		/*
+		 * AV1 Video Engine - Google Collaboration Hardware
+		 * CRITICAL DISCOVERY: H713 has dedicated AV1 hardware acceleration
+		 * Compatible string "sunxi-google-ve" indicates Google partnership
+		 * Provides hardware AV1 decode - major performance advantage
+		 */
+		av1: av1-codec@1c0d000 {
+			compatible = "allwinner,sunxi-google-ve";
+			reg = <0x01c0d000 0x1000>, <0x02001000 0x1000>;
+			interrupts = <0 107 4>; /* GIC_SPI 107 IRQ_TYPE_LEVEL_HIGH */
+			clocks = <&ccu 33>, <&ccu 34>, <&ccu 32>, <&ccu 53>; /* bus_ve, bus_av1, av1, mbus_av1 */
+			clock-names = "bus_ve", "bus_av1", "av1", "mbus_av1";
+			resets = <&ccu 7>, <&ccu 8>; /* reset_ve, reset_av1 */
+			reset-names = "reset_ve", "reset_av1";
+			iommus = <&iommu 5 1>;
+			power-domains = <&power_domains 4>;
+			status = "okay";
+		};
+
+		/*
 		 * MIPS Co-processor Loader
 		 * Critical component for display subsystem
 		 * Factory configuration: register base 0x3061000

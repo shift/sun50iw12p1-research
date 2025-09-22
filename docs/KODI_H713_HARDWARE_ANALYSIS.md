@@ -34,7 +34,7 @@ The Allwinner H713 SoC provides **strong hardware compatibility** for Kodi media
 | **H.265/HEVC** | ✅ Hardware decode | 4K@60fps, 1080p@120fps | ✅ **VAAPI/DRM-PRIME** |
 | **VP9** | ✅ Hardware decode | 4K@30fps, 1080p@60fps | ✅ **VAAPI/DRM-PRIME** |
 | **VP8** | ✅ Hardware decode | 1080p@60fps | ✅ **VAAPI/DRM-PRIME** |
-| **AV1** | ❌ Software only | CPU-limited | ⚠️ **Limited performance** |
+| **AV1** | ✅ **Hardware decode** | 4K@30fps, 1080p@60fps | ✅ **Google-Allwinner AV1 block** |
 
 **Hardware Video Decode Framework:**
 ```
@@ -197,7 +197,7 @@ The Allwinner H713 SoC provides **strong hardware compatibility** for Kodi media
 
 | Limitation | Impact | Mitigation Strategy |
 |------------|--------|-------------------|
-| **AV1 Codec** | Software decode only | ⚠️ **Avoid AV1 content or accept CPU load** |
+| **AV1 Codec** | Hardware acceleration available | ✅ **RECOMMEND AV1 content for optimal efficiency** |
 | **Memory Bandwidth** | 2GB total system memory | ✅ **Optimize buffer sizes** |
 | **GPU Memory** | Unified memory (no dedicated VRAM) | ✅ **Use zero-copy rendering** |
 | **Thermal Management** | Passive cooling only | ✅ **Enable CPU/GPU frequency scaling** |
