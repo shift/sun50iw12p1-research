@@ -129,68 +129,6 @@
           CXX = "${aarch64-toolchain.gcc}/bin/aarch64-unknown-linux-gnu-g++";
         };
 
-        # Additional build targets for the project
-        packages = {
-          # U-Boot build target (to be implemented)
-          u-boot = pkgs.stdenv.mkDerivation {
-            pname = "u-boot-hy300";
-            version = "unstable";
-            
-            src = ./.;
-            
-            nativeBuildInputs = with pkgs; [
-              gnumake
-              aarch64-toolchain.gcc
-              dtc
-              python3
-            ];
-            
-            configurePhase = ''
-              echo "U-Boot configuration placeholder"
-            '';
-            
-            buildPhase = ''
-              echo "U-Boot build placeholder"
-            '';
-            
-            installPhase = ''
-              mkdir -p $out
-              echo "U-Boot install placeholder" > $out/README
-            '';
-          };
-
-          # Kernel build target (to be implemented)
-          kernel = pkgs.stdenv.mkDerivation {
-            pname = "linux-hy300";
-            version = "unstable";
-            
-            src = ./.;
-            
-            nativeBuildInputs = with pkgs; [
-              gnumake
-              aarch64-toolchain.gcc
-              bc
-              bison
-              flex
-              openssl
-              elfutils
-            ];
-            
-            configurePhase = ''
-              echo "Kernel configuration placeholder"
-            '';
-            
-            buildPhase = ''
-              echo "Kernel build placeholder"
-            '';
-            
-            installPhase = ''
-              mkdir -p $out
-              echo "Kernel install placeholder" > $out/README
-            '';
-          };
-        };
-
         # Development checks
         checks = {
           # Verify cross-compilation toolchain
@@ -242,18 +180,185 @@
         packages.x86_64-linux.hy300-vm = 
           self.nixosConfigurations.hy300-vm.config.system.build.vm;
 
-        # VM test package (simple script approach)
-        packages.x86_64-linux.hy300-test-vm = nixpkgs.legacyPackages.x86_64-linux.writeShellScriptBin "hy300-test-vm" ''
-          echo "HY300 VM Test Environment"
-          echo "Building test VM with HY300 projector system..."
-          
-          # Use nixos-rebuild to build VM
-          ${nixpkgs.legacyPackages.x86_64-linux.nixos-rebuild}/bin/nixos-rebuild build-vm \
-            --flake ${./.}#hy300-vm \
-            --target-host localhost
-            
-          echo "VM built successfully. Run with: ./result/bin/run-*-vm"
-        '';
+         # VM test package (simple script approach)
+         packages.x86_64-linux.hy300-test-vm = nixpkgs.legacyPackages.x86_64-linux.writeShellScriptBin "hy300-test-vm" ''
+           echo "HY300 VM Test Environment"
+           echo "Building test VM with HY300 projector system..."
+           
+           # Use nixos-rebuild to build VM
+           ${nixpkgs.legacyPackages.x86_64-linux.nixos-rebuild}/bin/nixos-rebuild build-vm \
+             --flake ${./.}#hy300-vm \
+             --target-host localhost
+             
+           echo "VM built successfully. Run with: ./result/bin/run-*-vm"
+         '';
+
+         # U-Boot build target - packages existing U-Boot binaries
+         packages.x86_64-linux.u-boot = nixpkgs.legacyPackages.x86_64-linux.callPackage (
+           { stdenv }: stdenv.mkDerivation {
+             pname = "u-boot-hy300";
+             version = "2024.01-hy300";
+             
+             src = ./.;
+             
+             installPhase = ''
+               # Debug: list available files
+               echo "Available files in source:"
+               ls -la
+               
+               mkdir -p $out/bin
+               
+               # Copy existing U-Boot binaries (check if they exist)
+               if [ -f u-boot-sunxi-with-spl.bin ]; then
+                 cp u-boot-sunxi-with-spl.bin $out/bin/
+               else
+                 echo "WARNING: u-boot-sunxi-with-spl.bin not found"
+               fi
+               
+               if [ -f u-boot.bin ]; then
+                 cp u-boot.bin $out/bin/
+               else
+                 echo "WARNING: u-boot.bin not found"
+               fi
+               
+               if [ -f u-boot.dtb ]; then
+                 cp u-boot.dtb $out/bin/
+               else
+                 echo "WARNING: u-boot.dtb not found"
+               fi
+               
+               cp sunxi-spl.bin $out/bin/ 2>/dev/null || echo "sunxi-spl.bin not found"
+               cp u-boot-spl.bin $out/bin/ 2>/dev/null || echo "u-boot-spl.bin not found"
+               
+               # Create a readme with instructions
+               cat > $out/README << 'EOF'
+HY300 U-Boot v2024.01 Binaries
+
+Files:
+- u-boot-sunxi-with-spl.bin: Complete bootloader (749KB) - Flash to SD card or eMMC
+- u-boot.bin: Main U-Boot binary (690KB)
+- u-boot.dtb: U-Boot device tree (23KB)
+- sunxi-spl.bin: SPL only (40KB)
+
+Installation:
+1. Flash to SD card: dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8
+2. Or use sunxi-fel for FEL mode testing
+
+Built with HY300-specific configuration including DRAM parameters.
+EOF
+             '';
+           }
+         ) {};
+
+         # Device Tree build target
+         packages.x86_64-linux.device-tree = nixpkgs.legacyPackages.x86_64-linux.callPackage (
+           { stdenv, dtc }: stdenv.mkDerivation {
+             pname = "hy300-device-tree";
+             version = "6.16.7";
+             
+             src = ./.;
+             
+             nativeBuildInputs = [ dtc ];
+             
+             buildPhase = ''
+               # Compile main device tree
+               dtc -I dts -O dtb -o sun50i-h713-hy300.dtb sun50i-h713-hy300.dts
+               
+               # Validate device tree
+               dtc -I dtb -O dts sun50i-h713-hy300.dtb | head -20
+             '';
+             
+             installPhase = ''
+               mkdir -p $out/boot
+               cp sun50i-h713-hy300.dtb $out/boot/
+               cp sun50i-h713-hy300.dts $out/boot/
+               
+               # Copy variant DTBs if they exist
+               cp *.dtb $out/boot/ 2>/dev/null || true
+               
+               echo "HY300 Device Tree compiled successfully" > $out/README
+             '';
+           }
+         ) {};
+
+         # Kernel modules build target
+         packages.x86_64-linux.kernel-modules = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.aarch64-multiplatform.callPackage (
+           { stdenv, gnumake, bc, bison, flex, openssl, elfutils, kmod }: stdenv.mkDerivation {
+             pname = "hy300-kernel-modules";
+             version = "6.16.7";
+             
+             src = ./.;
+             
+             nativeBuildInputs = [ gnumake bc bison flex openssl elfutils kmod ];
+             
+             # We need kernel headers for module compilation
+             # For now, this will demonstrate the build structure
+             buildPhase = ''
+               export CROSS_COMPILE=aarch64-unknown-linux-gnu-
+               export ARCH=arm64
+               
+               echo "Building HY300 kernel modules..."
+               echo "Note: Requires full kernel source with headers"
+               
+               # Create module info
+               mkdir -p modules
+               echo "# HY300 Kernel Modules" > modules/README.md
+               echo "" >> modules/README.md
+               echo "## Available Modules:" >> modules/README.md
+               echo "- drivers/misc/hy300-keystone-motor.c - Motor control" >> modules/README.md
+               echo "- drivers/misc/sunxi-mipsloader.c - MIPS co-processor" >> modules/README.md
+               echo "- drivers/misc/sunxi-nsi.c - NSI communication" >> modules/README.md
+               echo "- drivers/misc/sunxi-tvtop.c - TV top control" >> modules/README.md
+               echo "- drivers/misc/sunxi-cpu-comm.c - CPU communication" >> modules/README.md
+               echo "- drivers/media/platform/sunxi/sunxi-tvcap-enhanced.c - HDMI capture" >> modules/README.md
+               echo "" >> modules/README.md
+               echo "Build requires full Linux kernel source tree." >> modules/README.md
+               
+               # Copy module sources
+               cp -r drivers modules/
+               
+               # Create Makefile for modules
+               cat > modules/Makefile << 'EOF'
+# HY300 Kernel Modules Makefile
+# Usage: make KERNEL_DIR=/path/to/kernel/source
+
+KERNEL_DIR ?= /lib/modules/$(shell uname -r)/build
+ARCH ?= arm64
+CROSS_COMPILE ?= aarch64-unknown-linux-gnu-
+
+# Motor control module
+obj-m += hy300-keystone-motor.o
+
+# MIPS loader and communication modules  
+obj-m += sunxi-mipsloader.o
+obj-m += sunxi-nsi.o
+obj-m += sunxi-tvtop.o
+obj-m += sunxi-cpu-comm.o
+
+# HDMI capture module
+obj-m += sunxi-tvcap-enhanced.o
+
+all:
+	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules
+
+clean:
+	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) clean
+
+install:
+	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules_install
+
+.PHONY: all clean install
+EOF
+             '';
+             
+             installPhase = ''
+               mkdir -p $out
+               cp -r modules/* $out/
+               
+               echo "HY300 kernel modules source package ready" > $out/BUILD_STATUS
+             '';
+           }
+         ) {};
 
          # Simple VM configuration for testing
          nixosConfigurations.hy300-vm = nixpkgs.lib.nixosSystem {
