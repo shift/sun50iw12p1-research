@@ -22,6 +22,8 @@
 #include <linux/io.h>
 #include <linux/delay.h>
 #include <linux/mutex.h>
+#include <linux/atomic.h>
+#include <linux/device.h>
 
 #include <media/v4l2-device.h>
 #include <media/v4l2-ioctl.h>
@@ -180,6 +182,49 @@ static const struct tvcap_format formats[] = {
 	},
 };
 
+/* Prometheus Metrics Structure for TVCAP Driver */
+struct tvcap_metrics {
+	/* V4L2 Capture Statistics */
+	atomic64_t frames_captured_total;
+	atomic64_t frames_dropped_total;
+	atomic64_t bytes_captured_total;
+	atomic64_t capture_errors_total;
+	
+	/* Buffer Management */
+	atomic64_t buffers_allocated_total;
+	atomic64_t buffers_freed_total;
+	atomic64_t buffer_queue_depth;
+	atomic64_t buffer_overruns_total;
+	
+	/* HDMI Signal Detection */
+	atomic64_t signal_detection_changes_total;
+	atomic64_t hdmi_hotplug_events_total;
+	atomic64_t format_change_events_total;
+	atomic_t signal_detected_status;
+	atomic_t hdmi_connected_status;
+	
+	/* Format and Resolution Tracking */
+	atomic_t current_width;
+	atomic_t current_height;
+	atomic_t current_fourcc;
+	atomic64_t format_negotiation_total;
+	
+	/* Hardware Status */
+	atomic64_t hardware_errors_total;
+	atomic64_t dma_errors_total;
+	atomic64_t fifo_errors_total;
+	atomic64_t timeout_errors_total;
+	
+	/* Performance Metrics */
+	atomic64_t interrupt_count_total;
+	atomic64_t register_access_total;
+	atomic_t streaming_active;
+};
+
+/* External reference to hy300_class from MIPS loader */
+extern struct class *hy300_class;
+
+
 /* Device structure */
 struct sunxi_tvcap_dev {
 	struct v4l2_device v4l2_dev;
@@ -213,6 +258,9 @@ struct sunxi_tvcap_dev {
 	/* Buffer management */
 	struct list_head buf_list;
 	u32 sequence;
+	
+	/* Prometheus metrics */
+	struct tvcap_metrics metrics;
 };
 
 /* Buffer structure */
@@ -230,6 +278,141 @@ static int tvcap_buffer_prepare(struct vb2_buffer *vb);
 static void tvcap_buffer_queue(struct vb2_buffer *vb);
 static int tvcap_start_streaming(struct vb2_queue *vq, unsigned int count);
 static void tvcap_stop_streaming(struct vb2_queue *vq);
+
+/* Prometheus Metrics Sysfs Functions */
+static ssize_t capture_stats_show(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	struct sunxi_tvcap_dev *tvcap = dev_get_drvdata(dev);
+	
+	return sprintf(buf,
+		"# HELP hy300_tvcap_frames_captured_total Total captured frames\n"
+		"# TYPE hy300_tvcap_frames_captured_total counter\n"
+		"hy300_tvcap_frames_captured_total %lld\n"
+		"# HELP hy300_tvcap_frames_dropped_total Total dropped frames\n"
+		"# TYPE hy300_tvcap_frames_dropped_total counter\n"
+		"hy300_tvcap_frames_dropped_total %lld\n"
+		"# HELP hy300_tvcap_bytes_captured_total Total bytes captured\n"
+		"# TYPE hy300_tvcap_bytes_captured_total counter\n"
+		"hy300_tvcap_bytes_captured_total %lld\n"
+		"# HELP hy300_tvcap_capture_errors_total Total capture errors\n"
+		"# TYPE hy300_tvcap_capture_errors_total counter\n"
+		"hy300_tvcap_capture_errors_total %lld\n",
+		atomic64_read(&tvcap->metrics.frames_captured_total),
+		atomic64_read(&tvcap->metrics.frames_dropped_total),
+		atomic64_read(&tvcap->metrics.bytes_captured_total),
+		atomic64_read(&tvcap->metrics.capture_errors_total));
+}
+static DEVICE_ATTR_RO(capture_stats);
+
+static ssize_t buffer_status_show(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	struct sunxi_tvcap_dev *tvcap = dev_get_drvdata(dev);
+	
+	return sprintf(buf,
+		"# HELP hy300_tvcap_buffers_allocated_total Total buffers allocated\n"
+		"# TYPE hy300_tvcap_buffers_allocated_total counter\n"
+		"hy300_tvcap_buffers_allocated_total %lld\n"
+		"# HELP hy300_tvcap_buffer_queue_depth Current buffer queue depth\n"
+		"# TYPE hy300_tvcap_buffer_queue_depth gauge\n"
+		"hy300_tvcap_buffer_queue_depth %lld\n",
+		atomic64_read(&tvcap->metrics.buffers_allocated_total),
+		atomic64_read(&tvcap->metrics.buffer_queue_depth));
+}
+static DEVICE_ATTR_RO(buffer_status);
+
+static ssize_t signal_detection_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	struct sunxi_tvcap_dev *tvcap = dev_get_drvdata(dev);
+	
+	return sprintf(buf,
+		"# HELP hy300_tvcap_signal_detected HDMI signal detection status\n"
+		"# TYPE hy300_tvcap_signal_detected gauge\n"
+		"hy300_tvcap_signal_detected %d\n"
+		"# HELP hy300_tvcap_hdmi_connected HDMI connection status\n"
+		"# TYPE hy300_tvcap_hdmi_connected gauge\n"
+		"hy300_tvcap_hdmi_connected %d\n",
+		atomic_read(&tvcap->metrics.signal_detected_status),
+		atomic_read(&tvcap->metrics.hdmi_connected_status));
+}
+static DEVICE_ATTR_RO(signal_detection);
+
+static ssize_t error_counters_show(struct device *dev,
+				  struct device_attribute *attr, char *buf)
+{
+	struct sunxi_tvcap_dev *tvcap = dev_get_drvdata(dev);
+	
+	return sprintf(buf,
+		"# HELP hy300_tvcap_hardware_errors_total Total hardware errors\n"
+		"# TYPE hy300_tvcap_hardware_errors_total counter\n"
+		"hy300_tvcap_hardware_errors_total %lld\n"
+		"# HELP hy300_tvcap_interrupt_count_total Total interrupts handled\n"
+		"# TYPE hy300_tvcap_interrupt_count_total counter\n"
+		"hy300_tvcap_interrupt_count_total %lld\n"
+		"# HELP hy300_tvcap_streaming_active Streaming status\n"
+		"# TYPE hy300_tvcap_streaming_active gauge\n"
+		"hy300_tvcap_streaming_active %d\n",
+		atomic64_read(&tvcap->metrics.hardware_errors_total),
+		atomic64_read(&tvcap->metrics.interrupt_count_total),
+		atomic_read(&tvcap->metrics.streaming_active));
+}
+static DEVICE_ATTR_RO(error_counters);
+
+/* Attribute group for sysfs */
+static struct attribute *tvcap_attrs[] = {
+	&dev_attr_capture_stats.attr,
+	&dev_attr_buffer_status.attr,
+	&dev_attr_signal_detection.attr,
+	&dev_attr_error_counters.attr,
+	NULL,
+};
+
+static const struct attribute_group tvcap_attr_group = {
+	.attrs = tvcap_attrs,
+};
+
+static const struct attribute_group *tvcap_attr_groups[] = {
+	&tvcap_attr_group,
+	NULL,
+};
+
+/* Metrics helper functions */
+static void tvcap_metrics_init(struct sunxi_tvcap_dev *tvcap)
+{
+	/* Initialize all atomic counters to zero */
+	atomic64_set(&tvcap->metrics.frames_captured_total, 0);
+	atomic64_set(&tvcap->metrics.frames_dropped_total, 0);
+	atomic64_set(&tvcap->metrics.bytes_captured_total, 0);
+	atomic64_set(&tvcap->metrics.capture_errors_total, 0);
+	
+	atomic64_set(&tvcap->metrics.buffers_allocated_total, 0);
+	atomic64_set(&tvcap->metrics.buffers_freed_total, 0);
+	atomic64_set(&tvcap->metrics.buffer_queue_depth, 0);
+	atomic64_set(&tvcap->metrics.buffer_overruns_total, 0);
+	
+	atomic64_set(&tvcap->metrics.signal_detection_changes_total, 0);
+	atomic64_set(&tvcap->metrics.hdmi_hotplug_events_total, 0);
+	atomic64_set(&tvcap->metrics.format_change_events_total, 0);
+	atomic_set(&tvcap->metrics.signal_detected_status, 0);
+	atomic_set(&tvcap->metrics.hdmi_connected_status, 0);
+	
+	atomic_set(&tvcap->metrics.current_width, 0);
+	atomic_set(&tvcap->metrics.current_height, 0);
+	atomic_set(&tvcap->metrics.current_fourcc, 0);
+	atomic64_set(&tvcap->metrics.format_negotiation_total, 0);
+	
+	atomic64_set(&tvcap->metrics.hardware_errors_total, 0);
+	atomic64_set(&tvcap->metrics.dma_errors_total, 0);
+	atomic64_set(&tvcap->metrics.fifo_errors_total, 0);
+	atomic64_set(&tvcap->metrics.timeout_errors_total, 0);
+	
+	atomic64_set(&tvcap->metrics.interrupt_count_total, 0);
+	atomic64_set(&tvcap->metrics.register_access_total, 0);
+	atomic_set(&tvcap->metrics.streaming_active, 0);
+}
+
 
 /* VB2 queue operations */
 static const struct vb2_ops tvcap_qops = {
@@ -591,6 +774,10 @@ static void tvcap_handle_frame_done(struct sunxi_tvcap_dev *tvcap)
 	vbuf->field = V4L2_FIELD_NONE;
 	
 	vb2_buffer_done(&vbuf->vb2_buf, VB2_BUF_STATE_DONE);
+
+	/* Update capture metrics */
+	atomic64_inc(&tvcap->metrics.frames_captured_total);
+	atomic64_add(tvcap->format.fmt.pix.sizeimage, &tvcap->metrics.bytes_captured_total);
 	
 	dev_dbg(tvcap->dev, "Frame completed: sequence %d\n", vbuf->sequence);
 }
@@ -779,6 +966,10 @@ static void tvcap_buffer_queue(struct vb2_buffer *vb)
 	
 	spin_lock_irqsave(&tvcap->irq_lock, flags);
 	list_add_tail(&buf->list, &tvcap->buf_list);
+
+	/* Track buffer allocation */
+	atomic64_inc(&tvcap->metrics.buffers_allocated_total);
+	atomic64_inc(&tvcap->metrics.buffer_queue_depth);
 	spin_unlock_irqrestore(&tvcap->irq_lock, flags);
 	
 	dev_dbg(tvcap->dev, "Buffer queued\n");
@@ -1328,6 +1519,9 @@ static int sunxi_tvcap_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	
 	tvcap->dev = &pdev->dev;
+
+	/* Initialize metrics */
+	tvcap_metrics_init(tvcap);
 	platform_set_drvdata(pdev, tvcap);
 	
 	/* Initialize synchronization */
@@ -1355,6 +1549,9 @@ static int sunxi_tvcap_probe(struct platform_device *pdev)
 	
 err_hw_cleanup:
 	tvcap_hw_cleanup(tvcap);
+
+	/* Update streaming metrics */
+	atomic_set(&tvcap->metrics.streaming_active, 0);
 	return ret;
 }
 
@@ -1366,6 +1563,9 @@ static int sunxi_tvcap_remove(struct platform_device *pdev)
 	
 	tvcap_cleanup_v4l2(tvcap);
 	tvcap_hw_cleanup(tvcap);
+
+	/* Update streaming metrics */
+	atomic_set(&tvcap->metrics.streaming_active, 0);
 	
 	dev_info(&pdev->dev, "TV Capture driver removed\n");
 	return 0;
@@ -1423,6 +1623,7 @@ static inline u32 tvtop_read(struct sunxi_tvcap_dev *tvcap, u32 reg)
 static inline void tvtop_write(struct sunxi_tvcap_dev *tvcap, u32 reg, u32 val)
 {
 	writel(val, tvcap->regs + reg);
+	atomic64_inc(&tvcap->metrics.register_access_total);
 }
 
 static inline void tvtop_set_bits(struct sunxi_tvcap_dev *tvcap, u32 reg, u32 bits)
