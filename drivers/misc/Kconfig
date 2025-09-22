@@ -1,20 +1,3 @@
-=== HY300 Projector Development Environment ===
-Cross-compile toolchain: aarch64-unknown-linux-gnu-
-Target architecture: arm64
-Sunxi tools available: sunxi-fel, sunxi-fexc, etc.
-
-Key tools installed:
-- Cross-compilation: aarch64-unknown-linux-gnu-gcc
-- Sunxi tools: sunxi-fel, sunxi-fexc
-- Firmware analysis: binwalk, hexdump, strings
-- Serial console: minicom, picocom
-- Device tree: dtc
-
-ROM analysis workflow:
-1. Extract firmware: binwalk -e firmware.img
-2. FEL access: sunxi-fel version
-3. Backup eMMC: sunxi-fel read 0x0 0x1000000 backup.img
-
 # SPDX-License-Identifier: GPL-2.0-only
 #
 # HY300 Projector Misc Drivers

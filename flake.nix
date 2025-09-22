@@ -281,44 +281,44 @@ EOF
            }
          ) {};
 
-         # Kernel modules build target
-         packages.x86_64-linux.kernel-modules = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.aarch64-multiplatform.callPackage (
-           { stdenv, gnumake, bc, bison, flex, openssl, elfutils, kmod }: stdenv.mkDerivation {
-             pname = "hy300-kernel-modules";
-             version = "6.16.7";
-             
-             src = ./.;
-             
-             nativeBuildInputs = [ gnumake bc bison flex openssl elfutils kmod ];
-             
-             # We need kernel headers for module compilation
-             # For now, this will demonstrate the build structure
-             buildPhase = ''
-               export CROSS_COMPILE=aarch64-unknown-linux-gnu-
-               export ARCH=arm64
-               
-               echo "Building HY300 kernel modules..."
-               echo "Note: Requires full kernel source with headers"
-               
-               # Create module info
-               mkdir -p modules
-               echo "# HY300 Kernel Modules" > modules/README.md
-               echo "" >> modules/README.md
-               echo "## Available Modules:" >> modules/README.md
-               echo "- drivers/misc/hy300-keystone-motor.c - Motor control" >> modules/README.md
-               echo "- drivers/misc/sunxi-mipsloader.c - MIPS co-processor" >> modules/README.md
-               echo "- drivers/misc/sunxi-nsi.c - NSI communication" >> modules/README.md
-               echo "- drivers/misc/sunxi-tvtop.c - TV top control" >> modules/README.md
-               echo "- drivers/misc/sunxi-cpu-comm.c - CPU communication" >> modules/README.md
-               echo "- drivers/media/platform/sunxi/sunxi-tvcap-enhanced.c - HDMI capture" >> modules/README.md
-               echo "" >> modules/README.md
-               echo "Build requires full Linux kernel source tree." >> modules/README.md
-               
-               # Copy module sources
-               cp -r drivers modules/
-               
-               # Create Makefile for modules
-               cat > modules/Makefile << 'EOF'
+          # Kernel modules build target
+          packages.x86_64-linux.kernel-modules = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.aarch64-multiplatform.callPackage (
+            { stdenv, gnumake, bc, bison, flex, openssl, elfutils, kmod }: stdenv.mkDerivation {
+              pname = "hy300-kernel-modules";
+              version = "6.16.7";
+              
+              src = ./.;
+              
+              nativeBuildInputs = [ gnumake bc bison flex openssl elfutils kmod ];
+              
+              # We need kernel headers for module compilation
+              # For now, this will demonstrate the build structure
+              buildPhase = ''
+                export CROSS_COMPILE=aarch64-unknown-linux-gnu-
+                export ARCH=arm64
+                
+                echo "Building HY300 kernel modules..."
+                echo "Note: Requires full kernel source with headers"
+                
+                # Create module info
+                mkdir -p modules
+                echo "# HY300 Kernel Modules" > modules/README.md
+                echo "" >> modules/README.md
+                echo "## Available Modules:" >> modules/README.md
+                echo "- drivers/misc/hy300-keystone-motor.c - Motor control" >> modules/README.md
+                echo "- drivers/misc/sunxi-mipsloader.c - MIPS co-processor" >> modules/README.md
+                echo "- drivers/misc/sunxi-nsi.c - NSI communication" >> modules/README.md
+                echo "- drivers/misc/sunxi-tvtop.c - TV top control" >> modules/README.md
+                echo "- drivers/misc/sunxi-cpu-comm.c - CPU communication" >> modules/README.md
+                echo "- drivers/media/platform/sunxi/sunxi-tvcap-enhanced.c - HDMI capture" >> modules/README.md
+                echo "" >> modules/README.md
+                echo "Build requires full Linux kernel source tree." >> modules/README.md
+                
+                # Copy module sources
+                cp -r drivers modules/
+                
+                # Create Makefile for modules
+                cat > modules/Makefile << 'EOF'
 # HY300 Kernel Modules Makefile
 # Usage: make KERNEL_DIR=/path/to/kernel/source
 
@@ -349,16 +349,194 @@ install:
 
 .PHONY: all clean install
 EOF
-             '';
-             
-             installPhase = ''
-               mkdir -p $out
-               cp -r modules/* $out/
-               
-               echo "HY300 kernel modules source package ready" > $out/BUILD_STATUS
-             '';
-           }
-         ) {};
+              '';
+              
+              installPhase = ''
+                mkdir -p $out
+                cp -r modules/* $out/
+                
+                echo "HY300 kernel modules source package ready" > $out/BUILD_STATUS
+              '';
+            }
+          ) {};
+
+          # Simplified Linux kernel with HY300 modules  
+          packages.x86_64-linux.kernel-with-modules = nixpkgs.legacyPackages.x86_64-linux.stdenv.mkDerivation rec {
+            pname = "hy300-linux-kernel";
+            version = "6.6.106";
+            
+            src = nixpkgs.legacyPackages.x86_64-linux.linux_6_6.src;
+            
+            nativeBuildInputs = with nixpkgs.legacyPackages.x86_64-linux; [ 
+              gnumake bc bison flex openssl elfutils kmod perl python3 rsync
+              gmp libmpc mpfr zlib gcc
+              # Cross compiler
+              pkgsCross.aarch64-multiplatform.buildPackages.gcc
+            ];
+            
+            # Project source for our modules
+            projectSrc = ./.;
+            
+            configurePhase = ''
+              export CROSS_COMPILE=aarch64-unknown-linux-gnu-
+              export ARCH=arm64
+              export KBUILD_BUILD_HOST=nixos
+              export KBUILD_BUILD_USER=developer
+              
+              echo "=== Linux Kernel ${version} for HY300 Projector ==="
+              
+              echo "=== Integrating HY300 drivers ==="
+              
+              # Copy our drivers into kernel source tree FIRST
+              cp -r $projectSrc/drivers/misc/* drivers/misc/ 2>/dev/null || true
+              
+              # Create placeholder directories if media/platform/sunxi doesn't exist
+              mkdir -p drivers/media/platform/sunxi/
+              cp -r $projectSrc/drivers/media/platform/sunxi/* drivers/media/platform/sunxi/ 2>/dev/null || true
+              
+              # Integrate our Kconfig files into kernel Kconfig system
+              echo "Integrating HY300 driver Kconfig files..."
+              
+              # Add our misc drivers to drivers/misc/Kconfig
+              if ! grep -q "HY300_KEYSTONE_MOTOR" drivers/misc/Kconfig; then
+                echo "" >> drivers/misc/Kconfig
+                echo "# HY300 Projector Drivers" >> drivers/misc/Kconfig
+                cat $projectSrc/drivers/misc/Kconfig >> drivers/misc/Kconfig
+              fi
+              
+              # Add our media drivers to drivers/media/platform/Kconfig
+              # Find the right place to insert (after other sunxi drivers if they exist)
+              if ! grep -q "VIDEO_SUNXI_TVCAP" drivers/media/platform/Kconfig; then
+                echo "" >> drivers/media/platform/Kconfig
+                echo "# HY300 Sunxi Media Drivers" >> drivers/media/platform/Kconfig
+                cat $projectSrc/drivers/media/platform/sunxi/Kconfig >> drivers/media/platform/Kconfig
+              fi
+              
+              # Update Makefiles to include our drivers
+              if ! grep -q "hy300-keystone-motor" drivers/misc/Makefile; then
+                echo "obj-\$(CONFIG_SUNXI_MIPSLOADER) += sunxi-mipsloader.o" >> drivers/misc/Makefile
+                echo "obj-\$(CONFIG_SUNXI_NSI) += sunxi-nsi.o" >> drivers/misc/Makefile
+                echo "obj-\$(CONFIG_SUNXI_CPU_COMM) += sunxi-cpu-comm.o" >> drivers/misc/Makefile
+                echo "obj-\$(CONFIG_HY300_KEYSTONE_MOTOR) += hy300-keystone-motor.o" >> drivers/misc/Makefile
+                echo "obj-\$(CONFIG_SUNXI_TVTOP) += sunxi-tvtop.o" >> drivers/misc/Makefile
+              fi
+              
+              if ! grep -q "sunxi-tvcap" drivers/media/platform/Makefile; then
+                echo "obj-\$(CONFIG_VIDEO_SUNXI_TVCAP) += sunxi/" >> drivers/media/platform/Makefile
+              fi
+              
+              # Create sunxi media platform Makefile if it doesn't exist
+              if [ ! -f drivers/media/platform/sunxi/Makefile ]; then
+                echo "obj-\$(CONFIG_VIDEO_SUNXI_TVCAP) += sunxi-tvcap.o" > drivers/media/platform/sunxi/Makefile
+              fi
+              
+              # Copy device tree
+              mkdir -p arch/arm64/boot/dts/allwinner/
+              cp $projectSrc/sun50i-h713-hy300.dts arch/arm64/boot/dts/allwinner/
+              
+              # Add our device tree to the Makefile
+              if ! grep -q "sun50i-h713-hy300.dtb" arch/arm64/boot/dts/allwinner/Makefile; then
+                echo "dtb-\$(CONFIG_ARCH_SUNXI) += sun50i-h713-hy300.dtb" >> arch/arm64/boot/dts/allwinner/Makefile
+              fi
+              
+              # Start with arm64 defconfig
+              make defconfig
+              
+              # Copy our kernel config
+              if [ -f $projectSrc/configs/hy300_kernel_defconfig ]; then
+                cat $projectSrc/configs/hy300_kernel_defconfig >> .config
+              fi
+              
+              # Update kernel config non-interactively
+              yes "" | make oldconfig || true
+              
+              echo "Kernel configuration completed"
+            '';
+            
+            buildPhase = ''
+              export CROSS_COMPILE=aarch64-unknown-linux-gnu-
+              export ARCH=arm64
+              export KBUILD_BUILD_HOST=nixos
+              export KBUILD_BUILD_USER=developer
+              
+              echo "=== Building kernel (Image only) ==="
+              
+              # Build just the kernel image first
+              make -j$(nproc) Image
+              
+              echo "=== Building device tree ==="
+              
+              # Build device tree using dtc directly (more reliable)
+              dtc -I dts -O dtb -o arch/arm64/boot/dts/allwinner/sun50i-h713-hy300.dtb arch/arm64/boot/dts/allwinner/sun50i-h713-hy300.dts
+              
+              # Verify DTB was created
+              if [ -f arch/arm64/boot/dts/allwinner/sun50i-h713-hy300.dtb ]; then
+                echo "Device tree built successfully: $(stat -c%s arch/arm64/boot/dts/allwinner/sun50i-h713-hy300.dtb) bytes"
+              else
+                echo "ERROR: Device tree build failed"
+                exit 1
+              fi
+              
+              echo "=== Build completed ==="
+              echo "Kernel: arch/arm64/boot/Image"
+              echo "DTB: arch/arm64/boot/dts/allwinner/sun50i-h713-hy300.dtb"
+            '';
+            
+            installPhase = ''
+              mkdir -p $out/boot
+              mkdir -p $out/src
+              
+              # Install kernel image and device tree
+              cp arch/arm64/boot/Image $out/boot/
+              cp arch/arm64/boot/dts/allwinner/sun50i-h713-hy300.dtb $out/boot/
+              
+              # Install basic kernel headers for module development
+              cp -r include $out/src/
+              cp -r scripts $out/src/
+              cp Makefile $out/src/
+              cp .config $out/src/
+              
+              # Install our driver sources for out-of-tree compilation
+              mkdir -p $out/src/drivers
+              cp -r $projectSrc/drivers/* $out/src/drivers/
+              
+              # Create build info
+              cat > $out/BUILD_SUMMARY << EOF
+HY300 Linux Kernel ${version} Build Summary
+==========================================
+
+Kernel Image: $out/boot/Image ($(stat -c%s arch/arm64/boot/Image) bytes)
+Device Tree: $out/boot/sun50i-h713-hy300.dtb ($(stat -c%s arch/arm64/boot/dts/allwinner/sun50i-h713-hy300.dtb) bytes)
+Driver Sources: $out/src/drivers/
+
+Built for: ARM64 (Allwinner H713)
+Cross-compiler: aarch64-unknown-linux-gnu-gcc
+Configuration: Minimal Sunxi + HY300 hardware support
+
+HY300 Driver Sources Available:
+- hy300-keystone-motor.c - Motor control
+- sunxi-mipsloader.c - MIPS co-processor
+- sunxi-nsi.c - NSI communication  
+- sunxi-tvtop.c - TV top control
+- sunxi-cpu-comm.c - CPU communication
+- sunxi-tvcap-enhanced.c - HDMI capture
+
+Installation:
+1. Copy Image to target /boot/ as vmlinuz
+2. Copy DTB to target /boot/
+3. Compile drivers as needed with target kernel headers
+
+Built with Nix cross-compilation environment.
+EOF
+              
+              echo "Kernel build completed successfully" > $out/SUCCESS
+            '';
+            
+            meta = {
+              description = "Linux kernel ${version} with HY300 projector support";
+              platforms = [ "x86_64-linux" ];
+            };
+          };
 
          # Simple VM configuration for testing
          nixosConfigurations.hy300-vm = nixpkgs.lib.nixosSystem {
