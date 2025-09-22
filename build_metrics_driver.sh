@@ -1,73 +1,19 @@
-// SPDX-License-Identifier: GPL-2.0
-/*
- * Allwinner MIPS Co-processor Loader Driver
- * 
- * Copyright (C) 2025 HY300 Linux Porting Project
- * 
- * This driver provides support for the MIPS co-processor found in
- * Allwinner H713 SoC, specifically for the HY300 projector hardware.
- * The MIPS co-processor handles display engine control, panel timing,
- * and projector-specific hardware management.
- * 
- * Based on reverse engineering of factory Android implementation.
- */
+#!/bin/bash
 
-#include <linux/module.h>
-#include <linux/platform_device.h>
-#include <linux/of.h>
-#include <linux/of_device.h>
-#include <linux/io.h>
-#include <linux/ioctl.h>
-#include <linux/cdev.h>
-#include <linux/device.h>
-#include <linux/slab.h>
-#include <linux/uaccess.h>
-#include <linux/firmware.h>
-#include <linux/dma-mapping.h>
-#include <linux/interrupt.h>
-#include <linux/of_reserved_mem.h>
-#include <linux/crc32.h>
-#include <linux/crypto.h>
-#include <linux/delay.h>
-#include <linux/sysfs.h>
+# Build script to add Prometheus metrics to MIPS loader driver
+set -e
 
-/* MIPS Memory Layout (from factory analysis) */
-#define MIPS_BOOT_CODE_ADDR     0x4b100000  /* 4KB - MIPS reset vector */
-#define MIPS_FIRMWARE_ADDR      0x4b101000  /* 12MB - Main MIPS firmware */
-#define MIPS_DEBUG_ADDR         0x4bd01000  /* 1MB - Debug buffer */
-#define MIPS_CONFIG_ADDR        0x4be01000  /* 256KB - Configuration */
-#define MIPS_DATABASE_ADDR      0x4be41000  /* 1MB - TSE database */
-#define MIPS_FRAMEBUFFER_ADDR   0x4bf41000  /* 26MB - Frame buffer */
-#define MIPS_TOTAL_SIZE         0x2800000   /* 40MB total */
+SOURCE_FILE="drivers/misc/sunxi-mipsloader.c"
+BACKUP_FILE="drivers/misc/sunxi-mipsloader.c.backup"
+OUTPUT_FILE="drivers/misc/sunxi-mipsloader-with-metrics.c"
 
-/* Register Interface (from factory analysis) */
-#define MIPS_REG_CMD            0x00    /* Command register */
-#define MIPS_REG_STATUS         0x04    /* Status register */
-#define MIPS_REG_DATA           0x08    /* Data register */
-#define MIPS_REG_CONTROL        0x0c    /* Control register */
+echo "Building MIPS loader driver with Prometheus metrics..."
 
-/* Panel Timing Configuration (from factory) */
-#define PANEL_HTOTAL_TYP        2200
-#define PANEL_HTOTAL_MIN        2095
-#define PANEL_HTOTAL_MAX        2809
-#define PANEL_VTOTAL_TYP        1125
-#define PANEL_VTOTAL_MIN        1107
-#define PANEL_VTOTAL_MAX        1440
-#define PANEL_PCLK_TYP          148500000  /* 148.5MHz */
-#define PANEL_PCLK_MIN          130000000
-#define PANEL_PCLK_MAX          164000000
+# Start with the original header
+head -70 "$BACKUP_FILE" > "$OUTPUT_FILE"
 
-/* Device node and class information */
-#define MIPSLOADER_DEVICE_NAME  "mipsloader"
-#define MIPSLOADER_CLASS_NAME   "mips"
-
-/* IOCTL commands */
-#define MIPSLOADER_IOC_MAGIC    'M'
-#define MIPSLOADER_IOC_LOAD_FW  _IOW(MIPSLOADER_IOC_MAGIC, 1, char*)
-#define MIPSLOADER_IOC_RESTART  _IO(MIPSLOADER_IOC_MAGIC, 2)
-#define MIPSLOADER_IOC_POWERDOWN _IO(MIPSLOADER_IOC_MAGIC, 3)
-#define MIPSLOADER_IOC_GET_STATUS _IOR(MIPSLOADER_IOC_MAGIC, 4, int)
-
+# Add metrics structure definition
+cat >> "$OUTPUT_FILE" << 'STRUCT_EOF'
 
 /**
  * struct mipsloader_metrics - Prometheus metrics tracking
@@ -100,38 +46,23 @@ struct mipsloader_metrics {
 	u32 last_firmware_crc;
 };
 
-/**
- * struct mipsloader_device - MIPS loader device structure
- * @pdev: Platform device
- * @reg_base: Register base address (ioremapped)
- * @mem_base: MIPS memory base address (ioremapped) 
- * @mem_size: Size of MIPS memory region
- * @cdev: Character device
- * @device: Device structure
- * @class: Device class
- * @major: Major device number
- * @firmware_loaded: Flag indicating if firmware is loaded
- * @lock: Mutex for device access synchronization
- * @metrics: Prometheus metrics tracking
- */
-struct mipsloader_device {
-	struct platform_device *pdev;
-	void __iomem *reg_base;
-	void __iomem *mem_base;
-	size_t mem_size;
-	struct cdev cdev;
-	struct device *device;
-	struct class *class;
-	int major;
-	bool firmware_loaded;
-	struct mutex lock;
-};
-	struct mipsloader_metrics metrics;
-};
+STRUCT_EOF
 
-static struct mipsloader_device *mipsloader_dev;
-static struct class *hy300_class;
+# Extract original device structure section (lines 71-95) and modify it
+sed -n '71,82p' "$BACKUP_FILE" >> "$OUTPUT_FILE"
+echo " * @metrics: Prometheus metrics tracking" >> "$OUTPUT_FILE"
+sed -n '83,95p' "$BACKUP_FILE" >> "$OUTPUT_FILE"
+echo "	struct mipsloader_metrics metrics;" >> "$OUTPUT_FILE"
+echo "};" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
 
+# Add global variables
+echo "static struct mipsloader_device *mipsloader_dev;" >> "$OUTPUT_FILE"
+echo "static struct class *hy300_class;" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Add helper function
+cat >> "$OUTPUT_FILE" << 'HELPER_EOF'
 /**
  * mipsloader_reg_offset_to_index - Convert register offset to metrics index
  */
@@ -146,6 +77,10 @@ static inline int mipsloader_reg_offset_to_index(u32 offset)
 	}
 }
 
+HELPER_EOF
+
+# Add modified register functions with metrics tracking
+cat >> "$OUTPUT_FILE" << 'REG_EOF'
 /**
  * mipsloader_reg_read - Read from MIPS control register
  * @offset: Register offset
@@ -187,6 +122,10 @@ static void mipsloader_reg_write(u32 offset, u32 value)
 	writel(value, mipsloader_dev->reg_base + offset);
 }
 
+REG_EOF
+
+# Add modified firmware load function with metrics
+cat >> "$OUTPUT_FILE" << 'FW_EOF'
 /**
  * mipsloader_load_firmware - Load MIPS firmware from file
  * @firmware_path: Path to firmware file
@@ -255,120 +194,13 @@ release_fw:
 	return ret;
 }
 
-/**
- * mipsloader_restart - Restart MIPS co-processor
- * 
- * Returns 0 on success, negative error code on failure
- */
-static int mipsloader_restart(void)
-{
-	if (!mipsloader_dev->firmware_loaded) {
-		dev_err(&mipsloader_dev->pdev->dev, 
-			"Cannot restart: firmware not loaded\n");
-		return -ENOENT;
-	}
-	
-	/* Reset MIPS processor */
-	mipsloader_reg_write(MIPS_REG_CONTROL, 0x01);  /* Reset */
-	msleep(10);  /* Wait for reset */
-	mipsloader_reg_write(MIPS_REG_CONTROL, 0x00);  /* Release reset */
-	
-	dev_info(&mipsloader_dev->pdev->dev, "MIPS co-processor restarted\n");
-	return 0;
-}
+FW_EOF
 
-/**
- * mipsloader_powerdown - Power down MIPS co-processor
- * 
- * Returns 0 on success, negative error code on failure
- */
-static int mipsloader_powerdown(void)
-{
-	/* Send powerdown command */
-	mipsloader_reg_write(MIPS_REG_CMD, 0x02);  /* Powerdown command */
-	
-	/* Wait for acknowledgment */
-	msleep(100);
-	
-	dev_info(&mipsloader_dev->pdev->dev, "MIPS co-processor powered down\n");
-	return 0;
-}
+# Copy the rest of the functions up to the file_operations (lines 182-295)
+sed -n '182,295p' "$BACKUP_FILE" >> "$OUTPUT_FILE"
 
-/**
- * mipsloader_open - Open device node
- */
-static int mipsloader_open(struct inode *inode, struct file *file)
-{
-	if (!mipsloader_dev)
-		return -ENODEV;
-	
-	file->private_data = mipsloader_dev;
-	return 0;
-}
-
-/**
- * mipsloader_release - Close device node
- */
-static int mipsloader_release(struct inode *inode, struct file *file)
-{
-	return 0;
-}
-
-/**
- * mipsloader_ioctl - Handle IOCTL commands
- */
-static long mipsloader_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	struct mipsloader_device *dev = file->private_data;
-	int ret = 0;
-	char firmware_path[256];
-	u32 status;
-	
-	if (!dev)
-		return -ENODEV;
-	
-	mutex_lock(&dev->lock);
-	
-	switch (cmd) {
-	case MIPSLOADER_IOC_LOAD_FW:
-		if (copy_from_user(firmware_path, (char __user *)arg, sizeof(firmware_path))) {
-			ret = -EFAULT;
-			break;
-		}
-		firmware_path[sizeof(firmware_path) - 1] = '\0';
-		ret = mipsloader_load_firmware(firmware_path);
-		break;
-		
-	case MIPSLOADER_IOC_RESTART:
-		ret = mipsloader_restart();
-		break;
-		
-	case MIPSLOADER_IOC_POWERDOWN:
-		ret = mipsloader_powerdown();
-		break;
-		
-	case MIPSLOADER_IOC_GET_STATUS:
-		status = mipsloader_reg_read(MIPS_REG_STATUS);
-		if (copy_to_user((int __user *)arg, &status, sizeof(status)))
-			ret = -EFAULT;
-		break;
-		
-	default:
-		ret = -ENOTTY;
-		break;
-	}
-	
-	mutex_unlock(&dev->lock);
-	return ret;
-}
-
-static const struct file_operations mipsloader_fops = {
-	.owner = THIS_MODULE,
-	.open = mipsloader_open,
-	.release = mipsloader_release,
-	.unlocked_ioctl = mipsloader_ioctl,
-	.compat_ioctl = mipsloader_ioctl,
-};
+# Add sysfs functions
+cat >> "$OUTPUT_FILE" << 'SYSFS_EOF'
 
 /* Sysfs attribute functions for Prometheus metrics */
 
@@ -526,6 +358,10 @@ static struct attribute *mipsloader_attrs[] = {
 };
 ATTRIBUTE_GROUPS(mipsloader);
 
+SYSFS_EOF
+
+# Add modified probe function
+cat >> "$OUTPUT_FILE" << 'PROBE_EOF'
 /**
  * mipsloader_probe - Platform device probe
  */
@@ -652,6 +488,10 @@ unregister_chrdev:
 	return ret;
 }
 
+PROBE_EOF
+
+# Add modified remove function
+cat >> "$OUTPUT_FILE" << 'REMOVE_EOF'
 /**
  * mipsloader_remove - Platform device remove
  */
@@ -684,24 +524,10 @@ static void mipsloader_remove(struct platform_device *pdev)
 	dev_info(&pdev->dev, "MIPS loader driver removed\n");
 }
 
-static const struct of_device_id mipsloader_of_match[] = {
-	{ .compatible = "allwinner,sunxi-mipsloader" },
-	{ /* sentinel */ }
-};
-MODULE_DEVICE_TABLE(of, mipsloader_of_match);
+REMOVE_EOF
 
-static struct platform_driver mipsloader_driver = {
-	.probe = mipsloader_probe,
-	.remove = mipsloader_remove,
-	.driver = {
-		.name = "sunxi-mipsloader",
-		.of_match_table = mipsloader_of_match,
-	},
-};
+# Copy the rest of the file (platform driver structure and module info)
+sed -n '421,441p' "$BACKUP_FILE" >> "$OUTPUT_FILE"
 
-module_platform_driver(mipsloader_driver);
-
-MODULE_AUTHOR("HY300 Linux Porting Project");
-MODULE_DESCRIPTION("Allwinner MIPS Co-processor Loader Driver");
-MODULE_LICENSE("GPL v2");
-MODULE_ALIAS("platform:sunxi-mipsloader");
+echo "Successfully built MIPS loader driver with Prometheus metrics"
+echo "Output file: $OUTPUT_FILE"
