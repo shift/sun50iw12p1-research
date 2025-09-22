@@ -3,6 +3,10 @@
 
 { config, lib, pkgs, ... }:
 
+let
+  hy300KodiPackages = pkgs.callPackage ./packages/kodi-hy300-plugins.nix {};
+in
+
 {
   # System configuration
   system.stateVersion = "24.05";
@@ -20,8 +24,9 @@
 
   # Basic packages for testing
   environment.systemPackages = with pkgs; [
-    # Media center
+    # Media center with HY300 configuration
     kodi
+    hy300KodiPackages.kodi-hy300-complete
     
     # Media files for testing
     ffmpeg
@@ -63,17 +68,23 @@
     };
   };
 
-  # Enable Kodi service
+  # Enable Kodi service with HY300 optimizations
   systemd.services.kodi = {
-    description = "Kodi Media Center";
+    description = "HY300 Kodi Media Center";
     after = [ "graphical-session.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "simple";
       User = "hy300";
-      ExecStart = "${pkgs.kodi}/bin/kodi --standalone";
+      ExecStartPre = "${hy300KodiPackages.kodi-hy300-complete}/bin/install-hy300-kodi-complete";
+      ExecStart = "${hy300KodiPackages.kodi-hy300-complete}/bin/hy300-kodi";
       Restart = "always";
       RestartSec = 5;
+      Environment = [
+        "DISPLAY=:0"
+        "KODI_HOME=/home/hy300/.kodi"
+        "PULSE_RUNTIME_PATH=/run/user/1000/pulse"
+      ];
     };
   };
 

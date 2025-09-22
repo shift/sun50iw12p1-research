@@ -538,7 +538,10 @@ EOF
             };
           };
 
-         # Simple VM configuration for testing
+          # HY300 Kodi Configuration Package
+          packages.x86_64-linux.hy300-kodi = nixpkgs.legacyPackages.x86_64-linux.callPackage ./nixos/packages/kodi-hy300-plugins.nix {};
+
+          # Simple VM configuration for testing
          nixosConfigurations.hy300-vm = nixpkgs.lib.nixosSystem {
            system = "x86_64-linux";
            modules = [

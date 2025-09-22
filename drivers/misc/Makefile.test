@@ -1,0 +1,18 @@
+# Test Makefile for MIPS loader kernel module compilation
+
+obj-m := sunxi-mipsloader.o
+
+# Kernel build directory (adjust as needed)
+KDIR := /lib/modules/$(shell uname -r)/build
+
+# Cross-compilation settings
+ARCH := arm64
+CROSS_COMPILE := aarch64-unknown-linux-gnu-
+
+all:
+	$(MAKE) -C $(KDIR) M=$(PWD) modules
+
+clean:
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
+
+.PHONY: all clean
