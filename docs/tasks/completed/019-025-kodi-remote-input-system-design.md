@@ -1,6 +1,6 @@
 # Task 025: Kodi Remote Input System Design
 
-**Status:** in_progress  
+**Status:** completed  
 **Priority:** high  
 **Phase:** Phase VIII - Kodi Media Center Development  
 **Assigned:** AI Agent  
@@ -193,7 +193,7 @@ This task ensures the HY300 projector provides an optimal 10-foot UI experience 
 **Mainline Device Tree (sun50i-h713-hy300.dts):**
 - **Register Base:** 0x7040000 (confirmed compatible with factory hardware)
 - **GPIO Pin:** PL9 configured for s_cir_rx function
-- **Status:** ENABLED (ready for use)
+- **Status:** completed (ready for use)
 - **Compatible Drivers:** allwinner,sun50i-a64-ir and allwinner,sun6i-a31-ir
 - **Custom RC Map:** "rc-hy300" for HY300-specific button mapping
 
