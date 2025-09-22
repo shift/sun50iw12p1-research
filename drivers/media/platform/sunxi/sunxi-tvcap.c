@@ -879,6 +879,9 @@ static irqreturn_t tvcap_irq_handler(int irq, void *dev_id)
 	irqreturn_t ret = IRQ_NONE;
 	
 	spin_lock(&tvcap->irq_lock);
+
+	/* Count interrupts */
+	atomic64_inc(&tvcap->metrics.interrupt_count_total);
 	
 	status = tvtop_read_and_clear_interrupts(tvcap);
 	if (!status) {
@@ -980,6 +983,9 @@ static int tvcap_start_streaming(struct vb2_queue *vq, unsigned int count)
 	struct sunxi_tvcap_dev *tvcap = vb2_get_drv_priv(vq);
 	
 	dev_info(tvcap->dev, "Starting TV capture streaming\n");
+
+	/* Update streaming metrics */
+	atomic_set(&tvcap->metrics.streaming_active, 1);
 	
 	/* TODO: Start hardware capture */
 	/* - Configure capture format */
@@ -1483,6 +1489,19 @@ static int tvcap_init_v4l2(struct sunxi_tvcap_dev *tvcap)
 	
 	ret = video_register_device(vdev, VFL_TYPE_VIDEO, -1);
 	if (ret) {
+
+	/* Create metrics sysfs interface using hy300 class */
+	if (hy300_class) {
+		struct device *metrics_dev = device_create_with_groups(hy300_class, dev,
+					       MKDEV(0, 0), tvcap,
+					       tvcap_attr_groups,
+					       "tvcap");
+		if (IS_ERR(metrics_dev)) {
+			dev_warn(dev, "Failed to create metrics device: %ld\n",
+				PTR_ERR(metrics_dev));
+		}
+	}
+
 		dev_err(dev, "Failed to register video device: %d\n", ret);
 		goto err_queue;
 	}
