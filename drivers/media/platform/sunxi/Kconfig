@@ -17,3 +17,4 @@ config VIDEO_SUNXI_TVCAP
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called sunxi-tvcap.
+source "drivers/media/platform/sunxi/sun50i-h713-av1/Kconfig"
