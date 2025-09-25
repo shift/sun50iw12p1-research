@@ -23,7 +23,7 @@
 
 | Component | Status | Driver Compatibility | Notes |
 |-----------|--------|---------------------|-------|
-| **eMMC** | ✅ Complete | sun50i-h6-emmc | Primary storage, 8-bit bus, HS200 support |
+| **eMMC** | ✅ Complete | sun50i-h6-emmc | Primary storage, 8-bit bus, HS200 support - [Full Analysis](HY300_EMMC_STORAGE_ANALYSIS.md) |
 | **UART0** | ✅ Complete | snps,dw-apb-uart | Debug console (115200n8) |
 | **I2C1** | ✅ Complete | sun50i-h6-i2c | Sensor bus for accelerometers |
 
