@@ -1,0 +1,1157 @@
+;  [partition]                  ; //
+;    name        = USERFS2      ; //
+;    size        = 16384        ; //
+B/K/M/G
+;    downloadfile= "123.fex"    ; //
+image.cfg
+;    keydata     = 1            ; //
+;    encrypt     = 1            ; //
+;    user_type   = ?            ; //
+;    verify      = 1            ; //
+name
+;     2
+name
+;     3
+size = 0, 
+;     4
+;***************************************************************************************************
+[partition_start]
+[partition]
+    name         = bootloader_a
+    size         = 65536
+    downloadfile = "boot-resource.fex"
+    user_type    = 0x8000
+[partition]
+[partition]
+    name         = env_a
+    size         = 512
+    downloadfile = "env.fex"
+    user_type    = 0x8000
+[partition]
+[partition]
+    name         = boot_a
+    size         = 131072
+    downloadfile = "boot.fex"
+    user_type    = 0x8000
+[partition]
+[partition]
+    name         = vendor_boot_a
+    size         = 65536
+    downloadfile = "vendor_boot.fex"
+    user_type    = 0x8000
+[partition]
+[partition]
+    name         = super
+    size         = 6291456
+    downloadfile = "super.fex"
+    user_type    = 0x8000
+;------------------------------>misc
+[partition]
+[partition]
+    name         = vbmeta_a
+    size         = 256
+    downloadfile = "vbmeta.fex"
+    user_type    = 0x8000
+[partition]
+[partition]
+    name         = vbmeta_system_a
+    size         = 128
+    downloadfile = "vbmeta_system.fex"
+    user_type    = 0x8000
+[partition]
+[partition]
+    name         = vbmeta_vendor_a
+    size         = 128
+    downloadfile = "vbmeta_vendor.fex"
+    user_type    = 0x8000
+[partition]
+[partition]
+    name         = frp
+    size         = 1024
+    ro           = 0
+    user_type    = 0x8000
+    keydata      = 0x8000
+[partition]
+[partition]
+    name         = metadata
+    size         = 32768
+    user_type    = 0x8000
+;------------------------------>data image private
+[partition]
+[partition]
+    name         = dtbo_a
+    size         = 4096
+    downloadfile = "dtbo.fex"
+    user_type    = 0x8000
+[partition]
+[partition]
+    name         = media_data
+    size         = 32768
+    user_type    = 0x8000
+;------------------------------>Reserve0
+[partition]
+[partition]
+    name         = UDISK
+    user_type    = 0x8100
+,sun50iw12
+2allwinner,tv303
+arm,sun50iw12p1
+ahci-5v
+2regulator-fixed
+=ahci-5v
+disabled
+usb0-vbus
+2regulator-fixed
+=usb0-vbus
+disabled
+usb1-vbus
+2regulator-fixed
+=usb1-vbus
+disabled
+usb2-vbus
+2regulator-fixed
+=usb2-vbus
+disabled
+vcc3v0
+2regulator-fixed
+=vcc3v0
+vcc3v3
+2regulator-fixed
+=vcc3v3
+vcc5v0
+2regulator-fixed
+=vcc5v0
+aliases
+/soc@2900000/sdmmc@4020000
+/soc@2900000/sdmmc@4022000
+/soc@2900000/spi@4025000
+/soc@2900000/spi@4026000
+/soc@2900000/twi@2502000
+/soc@2900000/twi@2502400
+/soc@2900000/twi@2502800
+/soc@2900000/twi@2502C00
+/soc@2900000/r_twi@7081000
+/soc@2900000/r_twi@7081400
+/soc@2900000/nand0@04011000
+	/soc@2900000/timer@3060000
+/soc@2900000/s_cir@7040000
+/soc@2900000/ac200@0
+!/soc@2900000/pwm@2000c00
+%/soc@2900000/pwm0@2000c10
+*/soc@2900000/pwm1@2000c11
+//soc@2900000/pwm2@2000c12
+4/soc@2900000/pwm3@2000c13
+9/soc@2900000/pwm4@2000c14
+>/soc@2900000/pwm5@2000c15
+C/soc@2900000/pwm6@2000c16
+H/soc@2900000/pwm7@2000c17
+M/soc@2900000/s_pwm@7020c00
+S/soc@2900000/s_pwm0@7020c10
+Z/soc@2900000/s_pwm1@7020c11
+a/soc@2900000/s_pwm2@7004012
+h/soc@2900000/ve@1c0e000
+l/soc@2900000/ve1@1c0e000
+p/soc@2900000/uart@2500000
+x/soc@2900000/uart@2500400
+/arisc_config
+/standby_param
+/cir_param
+reserved-memory
+bl31
+optee
+mipsloader
+decd
+cpu_comm
+firmware
+android
+2android,firmware
+soc@2900000/4020000.sdmmc,soc@2900000/4022000.sdmmc,soc@2900000
+vbmeta
+2android,vbmeta
+vbmeta,vbmeta_system,vbmeta_vendor,boot
+optee
+2linaro,optee-tz
+mips
+mips_code
+display.bin
+display.der
+mips_database
+database.TSE
+database.der
+mips_project_table
+projecttable.TSE
+projecttable.der
+mips_db_project
+ProjectID_
+mips_xml
+mips.xml
+mips_memory
+cpus
+cpu@0
+2arm,cortex-a53
+arm,armv8
+psci
+cpu@1
+2arm,cortex-a53
+arm,armv8
+psci
+cpu@2
+2arm,cortex-a53
+arm,armv8
+psci
+cpu@3
+2arm,cortex-a53
+arm,armv8
+psci
+idle-states
+yarm,psci
+cpu-sleep-0
+2arm,idle-state
+cluster-sleep-0
+2arm,idle-state
+psci
+2arm,psci-1.0
+dump-reg@100000
+2allwinner,sunxi-dump-reg
+cpu-opp-table
+2allwinner,sun50i-operating-points
+speed
+opp@672000000
+opp@792000000
+opp@1008000000
+opp@1104000000
+opp@1200000000
+opp@1296000000
+opp@1320000000
+opp@1392000000
+opp@1416000000
+opp@1512000000
+dcxo24M_clk
+2fixed-clock
+Edcxo24M
+interrupt-controller@3020000
+2arm,cortex-a15-gic
+arm,cortex-a9-gic
+interrupt-controller@0
+2allwinner,sunxi-wakeupgen
+timer_arch
+2arm,armv8-timer
+iommu@2010000
+2allwinner,sunxi-iommu
+iommu-irq
+iommu
+2arm,armv8-pmuv3
+power-management@ff000000
+2allwinner,tv303-pmu
+syscon
+simple-mfd
+power-controller
+2allwinner,tv303-power-controller
+ppu_rst
+pd_gpu@0
+pd_tvfe@1
+pd_tvcap@2
+pd_ve@3
+pd_av1@4
+pio-18
+2regulator-fixed
+=pio-18
+pio-33
+2regulator-fixed
+=pio-33
+thermal-zones
+cpu_thermal_zone
+trips
+trip-point@0
+passive
+trip-point@1
+passive
+cpu_crit@0
+critical
+cooling-maps
+map0
+map1
+gpu_thermal_zone
+soc@2900000
+2simple-bus
+sram_ctrl@3000000
+2allwinner,sram_ctrl
+soc_ver
+soc_id
+soc_bin
+av1@1c0d000
+2allwinner,sunxi-google-ve
+bus_ve
+bus_av1
+mbus_av1
+reset_ve
+reset_av1
+opp_table
+2operating-points-v2
+opp@300000000
+opp@400000000
+opp@576000000
+opp@600000000
+ve@1c0e000
+2allwinner,sunxi-cedar-ve
+bus_ve
+bus_ve3
+mbus_ve3
+reset_ve
+reset_ve3
+ve1@1c0e000
+2allwinner,sunxi-cedar-ve
+pinctrl@2000000
+2allwinner,sun50iw12-pinctrl
+hosc
+losc
+nand0@0
+PC10
+PC11
+PC12
+PC13
+PC14
+PC15
+PC16
+nand0
+nand0@1
+nand0
+nand0@2
+PC10
+PC11
+PC12
+PC13
+PC14
+PC15
+PC16
+gpio_in
+sdc0@0
+mmc0
+sdc0@1
+mmc0
+sdc0@2
+gpio_in
+sdc0@3
+uart0
+sdc0@4
+jtag
+sdc2@0
+PC10
+PC11
+PC13
+PC14
+PC15
+PC16
+mmc2
+sdc2@1
+PC10
+PC11
+PC13
+PC14
+PC15
+PC16
+gpio_in
+sdc2@2
+mmc2
+sdc1@0
+mmc1c
+sdc1@1
+gpio_in
+uart0@0
+uart0
+uart0@1
+gpio_in
+uart1@0
+uart1
+uart1@1
+gpio_in
+twi2@0
+twi2
+twi2@1
+gpio_in
+twi1@0
+twi1
+twi1@1
+gpio_in
+gmac@0
+emac
+gmac@1
+gpio_in
+pwm0@0
+PH17
+pwm0
+pwm0@2
+PH17
+d_pwm0
+pwm0@1
+PH17
+io_disabled
+pwm1@0
+PH18
+pwm1
+pwm1@1
+PH18
+gpio_in
+pwm2@0
+pwm2
+pwm2@1
+gpio_in
+pwm3@0
+pwm3
+pwm3@1
+io_disabled
+pwm3@2
+d_pwm3
+pwm4@0
+PA12
+pwm4
+pwm4@1
+PA12
+gpio_in
+spi1@0
+PH11
+PH12
+PH13
+spi1
+spi1@1
+PH10
+spi1
+spi1@2
+PH10
+PH11
+PH12
+PH13
+gpio_in
+mipsloader@0
+uart4
+mipsloader@1
+mips_jtag
+mipsloader@2
+gpio_in
+spdif@0
+PH19
+spdif
+spdif_sleep@0
+PH19
+gpio_in
+daudio2@0
+PH10
+PH11
+PH12
+PH13
+d_i2s2
+daudio2_sleep@0
+PH10
+PH11
+PH12
+PH13
+gpio_in
+clock@2001000
+2allwinner,sun50iw12-ccu
+hosc
+losc
+iosc
+audbrg@203042c
+2vs,trid-audio-bridge
+okay
+codec@2030000
+2allwinner,sunxi-internal-codec
+pll_audio
+pll_tvfe
+codec_dac
+codec_adc
+codec_bus
+codec
+okay
+dummy_cpudai@203032c
+2allwinner,sunxi-dummy-cpudai
+cpudai
+okay
+sound@2030330
+2allwinner,sunxi-codec-machine
+sndcodec
+okay
+spdif@2036000
+2allwinner,sunxi-spdif
+spdif0
+default
+sleep
+disabled
+soundspdif0@203605c
+2sunxi,simple-audio-card
+'sndspdif0
+okay
+simple-audio-card,cpu
+simple-audio-card,codec
+spdif@2037000
+2allwinner,sunxi-spdif
+spdif1
+okay
+soundspdif1@203705c
+2sunxi,simple-audio-card
+'sndspdif1
+okay
+simple-audio-card,cpu
+simple-audio-card,codec
+daudio@2032000
+2allwinner,sunxi-daudio
+daudio0
+okay
+sounddaudio0@203207c
+2sunxi,simple-audio-card
+'snddaudio0
+okay
+simple-audio-card,cpu
+simple-audio-card,codec
+daudio@2033000
+2allwinner,sunxi-daudio
+daudio1
+okay
+sounddaudio0@203307c
+2sunxi,simple-audio-card
+'snddaudio1
+okay
+simple-audio-card,cpu
+simple-audio-card,codec
+daudio@2034000
+2allwinner,sunxi-daudio
+daudio2
+default
+sleep
+disabled
+sounddaudio2@203407c
+2sunxi,simple-audio-card
+'snddaudio2
+okay
+simple-audio-card,cpu
+simple-audio-card,codec
+timer@3060000
+2allwinner,sun50i-timer
+soc_timer
+timer@0
+parent
+timer@1
+parent
+watchdog@2051000
+2allwinner,sun50i-wdt
+okay
+watchdog@2051400
+2allwinner,sun50i-wdt
+disabled
+uart@2500000
+2allwinner,sun50i-uart
+uart0
+okay
+default
+sleep
+uart@2500400
+2allwinner,sun50i-uart
+uart1
+okay
+default
+sleep
+uart@2500c00
+2allwinner,sun50i-uart
+uart3
+disabled
+twi@2502000
+2allwinner,sun50i-twi
+twi0
+disabled
+twi@2502400
+2allwinner,sun50i-twi
+twi1
+okay
+default
+sleep
+stk8ba58@18
+2stk,stk83xx
+okay
+kxttj3@18
+2kxtj3
+okay
+twi@2502800
+2allwinner,sun50i-twi
+twi2
+disabled
+twi@2502C00
+2allwinner,sun50i-twi
+twi3
+disabled
+r_twi@7081000
+2allwinner,sun50i-twi
+r_twi0
+disabled
+r_twi@7081400
+2allwinner,sun50i-twi
+r_twi1
+disabled
+dma-controller@3002000
+2allwinner,sun50iw12-dma
+mbus
+vincap
+msgbox@3003000
+2sunxi,msgbox-amp
+sunxi,mips-msgbox
+sunxi,cpus-msgbox
+s_cir@7040000
+2allwinner,s_cir
+pclk
+mclk
+okay
+default
+sleep
+ir_receiver
+2allwinner,gpio-ir-receiver
+disabled
+pwm@2000c00
+2allwinner,sunxi-pwm
+s_pwm@7020c00
+2allwinner,sunxi-pwm
+s_pwm0@7020c10
+2allwinner,sunxi-pwm0
+active
+sleep
+s_pwm1@7020c11
+2allwinner,sunxi-pwm1
+active
+sleep
+s_pwm2@7004012
+2allwinner,sunxi-pwm2
+active
+sleep
+pwm0@2000c10
+2allwinner,sunxi-pwm0
+active
+sleep
+disabled
+pwm1@2000c11
+2allwinner,sunxi-pwm1
+active
+sleep
+disabled
+pwm2@2000c12
+2allwinner,sunxi-pwm2
+active
+sleep
+disabled
+pwm3@2000c13
+2allwinner,sunxi-pwm3
+active
+sleep
+disabled
+pwm4@2000c14
+2allwinner,sunxi-pwm4
+active
+sleep
+pwm5@2000c15
+2allwinner,sunxi-pwm5
+pwm6@2000c16
+2allwinner,sunxi-pwm6
+pwm7@2000c17
+2allwinner,sunxi-pwm7
+ac200@0
+2allwinner,sunxi-ac200
+okay
+nsi-controller@2020000
+2allwinner,sun50i-nsi
+sdram
+mstg
+npd@02070000
+2allwinner,sun50i-npd
+okay
+sid@3006000
+2allwinner,sun50iw12p1-sid
+allwinner,sunxi-sid
+vf-table@00
+calib@14
+secure_status
+chipid
+rotpk
+ft_zon
+hwspinlock@3004000
+2allwinner,sunxi-hwspinlock
+clk_hwspinlock_bus
+sdmmc@4022000
+2allwinner,sunxi-mmc-v4p6x
+sdc2
+osc24m
+pll_periph
+pll_periph_800M
+default
+sleep
+disabled
+sdmmc@4020000
+2allwinner,sunxi-mmc-v5p3x
+sdc0
+osc24m
+pll_periph
+default
+sleep
+uart_jtag
+disabled
+sdmmc@4021000
+2allwinner,sunxi-mmc-v5p3x
+sdc1
+osc24m
+pll_periph
+default
+sleep
+okay
+nand0@04011000
+2allwinner,sun50iw12-nand
+nand0
+pll_periph
+mclk
+mbus
+default
+sleep
+none
+none
+.sun50iw10
+okay
+8disabled
+rtc_ccu@7090000
+2allwinner,sun50iw12-rtc-ccu
+rtc-ccu
+rtc@7090000
+2allwinner,sun50iw12p1-rtc
+r-ahb-rtc
+rtc-1k
+rtc-spi
+clock@7010000
+2allwinner,sun50iw12-r-ccu
+hosc
+losc
+iosc
+pll-periph
+pinctrl@7022000
+2allwinner,sun50iw12-r-pinctrl
+hosc
+losc
+s_cir0@0
+s_cir
+s_cir0@1
+gpio_in
+s_pwm0@0
+s_pwm0
+s_pwm0@1
+gpio_in
+s_pwm1@0
+s_pwm1
+s_pwm1@1
+gpio_in
+s_pwm2@0
+s_pwm2
+s_pwm2@1
+gpio_in
+ce@03040000
+2allwinner,sunxi-ce
+bus_ce
+ce_clk
+mbus_ce
+pll_periph0_2x
+okay
+ths@02009400
+2allwinner,sun50iw12p1-ths
+calibration
+keyboard@2009800
+2allwinner,keyboard_1350mv
+disabled
+gpadc@2009000
+2allwinner,sunxi-gpadc
+okay
+spi@4025000
+2allwinner,sun50i-spi
+spi0
+default
+sleep
+disabled
+spi@4026000
+2allwinner,sun50i-spi
+spi1
+default
+sleep
+disabled
+spi_board1@0
+spi_board1
+2rohm,dh2228fv
+disabled
+eth@4500000
+2allwinner,sunxi-gmac
+gmacirq
+gmac
+ephy
+gmac0
+disabled
+default
+sleep
+rmii
+demux@6100000
+2trix,demux
+cip@6000000
+2trix,cip
+ci@6500000
+2trix,ci
+ge2d@5240000
+2trix,ge2d
+clk_afbd
+clk_bus_disp
+rst_bus_disp
+io-memory
+2trix,io-accessor
+io-space-s
+io-space-n
+cpu_comm
+2trix,cpu_comm
+dtmb@6600000
+2allwinner,sunxi-dtmbip
+dtmb_120m
+okay
+dec@5600000
+2allwinner,sunxi-dec
+simple-bus
+clk_afbd
+clk_bus_disp
+rst_bus_disp
+mipsloader@3061000
+2allwinner,sunxi-mipsloader
+bus-reset
+cold-reset
+soft-reset
+bus-clk
+mips-clk
+default
+sleep
+okay
+tvcap@6800000
+2allwinner,sunxi-tvsystem-iommu-dev
+tvdisp@5000000
+2allwinner,sunxi-tvsystem-iommu-dev
+tvtop@5700000
+2allwinner,sunxi-tvtop
+reset_bus_disp
+reset_bus_tvcap
+reset_bus_demod
+clk_bus_disp
+clk_bus_tvcap
+clk_bus_demod
+svp_dtl_clk
+deint_clk
+panel_clk
+cip_tsp_clk
+cip_tsx_clk
+cip_mcx_clk
+tsa_tsp_clk
+tsa432_clk
+audio_ihb_clk
+i2h_clk
+cip_mts0_clk
+cip27_clk
+tvfe_1296M_clk
+audio_cpu
+audio_umac
+mpg0
+mpg1
+dtmb-120M
+cap_300m
+hdmi_audio_bus
+tcd3_clk
+vincap_dma_clk
+hdmi_audio_clk
+tvtop_pm@66666
+2allwinner,sunxi-tvtop-pm
+pd_tvcap
+pd_tvfe
+usbc0@0
+usbc0
+2allwinner,sunxi-otg-manager
+Xaxp_ctrl
+daxp_ctrl
+20080411
+nocare
+okay
+udc-controller@4100000
+2allwinner,sunxi-udc
+bus_otg
+okay
+ehci0-controller@4101000
+2allwinner,sunxi-ehci0
+bus_hci
+okay
+ohci0-controller@4101400
+2allwinner,sunxi-ohci0
+bus_hci
+ohci
+okay
+usbc1@0
+usbc1
+nocare
+okay
+ehci1-controller@4200000
+2allwinner,sunxi-ehci1
+bus_hci
+okay
+ohci1-controller@4200400
+2allwinner,sunxi-ohci1
+bus_hci
+ohci
+okay
+usbc2@0
+usbc2
+nocare
+okay
+leds@0
+2gpio-leds
+okay
+led-r
+pwr-r
+led-g
+status-g
+led-b
+led3-b
+ehci2-controller@4300000
+2allwinner,sunxi-ehci1
+bus_hci
+okay
+ohci2-controller@4300400
+2allwinner,sunxi-ohci1
+bus_hci
+ohci
+okay
+rfkill
+2allwinner,sunxi-rfkill
+okay
+wlan
+2allwinner,sunxi-wlan
+dcxo24m
+2allwinner,sunxi-bt
+dcxo24m
+addr_mgt
+2allwinner,sunxi-addr_mgt
+okay
+btlpm
+2allwinner,sunxi-btlpm
+okay
+btlpm
+gpio_para
+gpio_para
+2allwinner,sunxi-init-gpio
+disabled
+gpu@0x01800000
+2arm,mali-midgard
+clk_parent
+clk_mali
+clk_bus
+ipa_dvfs
+2arm,mali-simple-power-model
+?gpu_thermal_zone
+gpu-opp-table
+2allwinner, mali-midgard-operating-points
+opp@150000000
+opp@174000000
+opp@200000000
+opp@232000000
+opp@300000000
+opp@348000000
+opp@600000000
+opp@700000000
+arisc_config
+s_uart_config
+PL10
+PL11
+disabled
+standby_param
+auto_print@54321
+auto_print
+okay
+virtual_ac_ps
+2virtual-ac-power-supply
+cir_param
+vdd-cpu
+2sunxi-pwm-regulator
+=vdd_cpu
+okay
+motor_ctr
+2motor-control
+okay
+2pwm-fan
+disabled
+fan_ctrl
+2fan-ctrl
+okay
+gpio_keys
+2gpio-keys
+power
+power
+__symbols__
+/ahci-5v
+/usb0-vbus
+,/usb1-vbus
+:/usb2-vbus
+H/vcc3v0
+S/vcc3v3
+^/vcc5v0
+i/reserved-memory/mipsloader
+r/reserved-memory/decd
+|/reserved-memory/cpu_comm
+/cpus/cpu@0
+/cpus/cpu@1
+/cpus/cpu@2
+/cpus/cpu@3
+/cpus/idle-states/cpu-sleep-0
+/cpus/idle-states/cluster-sleep-0
+/dump-reg@100000
+/cpu-opp-table
+/dcxo24M_clk
+/interrupt-controller@3020000
+/interrupt-controller@0
+/iommu@2010000
+C/power-management@ff000000
+/power-management@ff000000/power-controller
+/pio-18
+/pio-33
+/thermal-zones/cpu_thermal_zone/trips
+/thermal-zones/cpu_thermal_zone/trips/trip-point@0
+/thermal-zones/cpu_thermal_zone/trips/trip-point@1
+%/thermal-zones/cpu_thermal_zone/trips/cpu_crit@0
+./soc@2900000
+2/soc@2900000/sram_ctrl@3000000
+</soc@2900000/av1@1c0d000
+@/soc@2900000/opp_table
+/soc@2900000/ve@1c0e000
+l/soc@2900000/ve1@1c0e000
+/soc@2900000/pinctrl@2000000
+M/soc@2900000/pinctrl@2000000/nand0@0
+Z/soc@2900000/pinctrl@2000000/nand0@1
+g/soc@2900000/pinctrl@2000000/nand0@2
+t/soc@2900000/pinctrl@2000000/sdc0@0
+/soc@2900000/pinctrl@2000000/sdc0@1
+/soc@2900000/pinctrl@2000000/sdc0@2
+/soc@2900000/pinctrl@2000000/sdc0@3
+/soc@2900000/pinctrl@2000000/sdc0@4
+/soc@2900000/pinctrl@2000000/sdc2@0
+/soc@2900000/pinctrl@2000000/sdc2@1
+/soc@2900000/pinctrl@2000000/sdc2@2
+/soc@2900000/pinctrl@2000000/sdc1@0
+/soc@2900000/pinctrl@2000000/sdc1@1
+/soc@2900000/pinctrl@2000000/uart0@0
+/soc@2900000/pinctrl@2000000/uart0@1
+/soc@2900000/pinctrl@2000000/uart1@0
+/soc@2900000/pinctrl@2000000/uart1@1
+ /soc@2900000/pinctrl@2000000/twi2@0
+,/soc@2900000/pinctrl@2000000/twi2@1
+8/soc@2900000/pinctrl@2000000/twi1@0
+D/soc@2900000/pinctrl@2000000/twi1@1
+P/soc@2900000/pinctrl@2000000/gmac@0
+]/soc@2900000/pinctrl@2000000/gmac@1
+j/soc@2900000/pinctrl@2000000/pwm0@0
+u/soc@2900000/pinctrl@2000000/pwm0@2
+/soc@2900000/pinctrl@2000000/pwm0@1
+/soc@2900000/pinctrl@2000000/pwm1@0
+/soc@2900000/pinctrl@2000000/pwm1@1
+/soc@2900000/pinctrl@2000000/pwm2@0
+/soc@2900000/pinctrl@2000000/pwm2@1
+/soc@2900000/pinctrl@2000000/pwm3@0
+/soc@2900000/pinctrl@2000000/pwm3@1
+/soc@2900000/pinctrl@2000000/pwm3@2
+/soc@2900000/pinctrl@2000000/pwm4@0
+/soc@2900000/pinctrl@2000000/pwm4@1
+/soc@2900000/pinctrl@2000000/spi1@0
+/soc@2900000/pinctrl@2000000/spi1@1
+/soc@2900000/pinctrl@2000000/spi1@2
+/soc@2900000/pinctrl@2000000/mipsloader@0
+$/soc@2900000/pinctrl@2000000/mipsloader@1
+6/soc@2900000/pinctrl@2000000/mipsloader@2
+H/soc@2900000/pinctrl@2000000/spdif@0
+U/soc@2900000/pinctrl@2000000/spdif_sleep@0
+b/soc@2900000/pinctrl@2000000/daudio2@0
+q/soc@2900000/pinctrl@2000000/daudio2_sleep@0
+/soc@2900000/clock@2001000
+/soc@2900000/audbrg@203042c
+/soc@2900000/codec@2030000
+/soc@2900000/dummy_cpudai@203032c
+/soc@2900000/sound@2030330
+/soc@2900000/spdif@2036000
+/soc@2900000/soundspdif0@203605c
+/soc@2900000/spdif@2037000
+/soc@2900000/soundspdif1@203705c
+/soc@2900000/daudio@2032000
+/soc@2900000/sounddaudio0@203207c
+/soc@2900000/sounddaudio0@203207c/simple-audio-card,codec
+/soc@2900000/daudio@2033000
+/soc@2900000/sounddaudio0@203307c
+/soc@2900000/sounddaudio0@203307c/simple-audio-card,codec
+/soc@2900000/daudio@2034000
+/soc@2900000/sounddaudio2@203407c
+$/soc@2900000/sounddaudio2@203407c/simple-audio-card,codec
+3/soc@2900000/timer@3060000
+/soc@2900000/timer@0
+>/soc@2900000/timer@1
+E/soc@2900000/watchdog@2051000
+J/soc@2900000/watchdog@2051400
+O/soc@2900000/uart@2500000
+U/soc@2900000/uart@2500400
+[/soc@2900000/uart@2500c00
+mmc dev [dev] [part] - show or set current mmc device [partition]
+mmc list - lists available devices
+mmc hwpartition [args...] - does hardware partitioning
+  arguments (sizes in 512-byte blocks):
+    [user [enh start cnt] [wrrel {on|off}]] - sets user data area attributes
+    [gp1|gp2|gp3|gp4 cnt [enh] [wrrel {on|off}]] - general purpose partition
+    [check|set|complete] - mode, complete set partitioning completed
+  WARNING: Partitioning is a write-once setting once it is set to complete.
+  Power cycling is required to initialize partitions after set to complete.
+mmc setdsr <value> - set DSR register value
+hwpartition
+setdsr
+disk partition related commands
+uuid <interface> <dev>:<part>
+    - print partition UUID
+part uuid <interface> <dev>:<part> <varname>
+    - set environment variable to partition UUID
+part list <interface> <dev>
+    - print a device's partition table
+part list <interface> <dev> [flags] <varname>
+    - set environment variable to the list of partitions
+      flags can be -bootable (list only bootable partitions)
+part start <interface> <dev> <part> <varname>
+    - set environment variable to the start of the partition (in blocks)
+      part can be either partition number or partition name
+part size <interface> <dev> <part> <varname>
+    - set environment variable to the size of the partition (in blocks)
+      part can be either partition number or partition name
+setexpr
+set environment variable as the result of eval expression
+[.b, .w, .l] name [*]value1 <op> [*]value2
+mmc dev [dev] [part] - show or set current mmc device [partition]
+mmc list - lists available devices
+mmc hwpartition [args...] - does hardware partitioning
+  arguments (sizes in 512-byte blocks):
+    [user [enh start cnt] [wrrel {on|off}]] - sets user data area attributes
+    [gp1|gp2|gp3|gp4 cnt [enh] [wrrel {on|off}]] - general purpose partition
+    [check|set|complete] - mode, complete set partitioning completed
+  WARNING: Partitioning is a write-once setting once it is set to complete.
+  Power cycling is required to initialize partitions after set to complete.
+mmc setdsr <value> - set DSR register value
+hwpartition
+setdsr
+disk partition related commands
+uuid <interface> <dev>:<part>
+    - print partition UUID
+part uuid <interface> <dev>:<part> <varname>
+    - set environment variable to partition UUID
+part list <interface> <dev>
+    - print a device's partition table
+part list <interface> <dev> [flags] <varname>
+    - set environment variable to the list of partitions
+      flags can be -bootable (list only bootable partitions)
+part start <interface> <dev> <part> <varname>
+    - set environment variable to the start of the partition (in blocks)
+      part can be either partition number or partition name
+part size <interface> <dev> <part> <varname>
+    - set environment variable to the size of the partition (in blocks)
+      part can be either partition number or partition name
+setexpr
+set environment variable as the result of eval expression
+[.b, .w, .l] name [*]value1 <op> [*]value2
