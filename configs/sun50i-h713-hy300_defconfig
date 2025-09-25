@@ -9,18 +9,31 @@ CONFIG_MMC0_CD_PIN=""
 CONFIG_MMC_SUNXI_SLOT_EXTRA=2
 CONFIG_SPL_SPI_SUNXI=y
 
-# DRAM Configuration - Extracted from HY300 boot0.bin
+# DRAM Configuration - Enhanced from HY300 boot0.bin + FEX files
 CONFIG_DRAM_CLK=640
 CONFIG_DRAM_TYPE=3
 CONFIG_DRAM_ZQ=0x7b7bfb
 CONFIG_DRAM_ODT_EN=1
-CONFIG_DRAM_EMR1=4340
-CONFIG_DRAM_TPR0=7280
-CONFIG_DRAM_TPR1=64
-CONFIG_DRAM_TPR2=24
-CONFIG_DRAM_DRV=0x4a2195
-CONFIG_DRAM_TPR3=0x24231420
-CONFIG_DRAM_TPR4=0x8b061
+# Mode registers from FEX
+CONFIG_DRAM_MR0=0x1c70
+CONFIG_DRAM_MR1=0x40
+CONFIG_DRAM_MR2=0x18
+CONFIG_DRAM_MR3=0x0
+# Enhanced timing parameters from FEX
+CONFIG_DRAM_TPR0=0x004A2195
+CONFIG_DRAM_TPR1=0x02423190
+CONFIG_DRAM_TPR2=0x0008B061
+CONFIG_DRAM_TPR3=0xB4787896
+CONFIG_DRAM_TPR4=0x0
+CONFIG_DRAM_TPR5=0x48484848
+CONFIG_DRAM_TPR6=0x48
+CONFIG_DRAM_TPR7=0x1620121e
+CONFIG_DRAM_TPR8=0x0
+CONFIG_DRAM_TPR9=0x0
+CONFIG_DRAM_TPR10=0x0
+CONFIG_DRAM_TPR11=0x44440000
+CONFIG_DRAM_TPR12=0x00005555
+CONFIG_DRAM_TPR13=0x34010100
 
 # Boot Configuration
 CONFIG_SPL_TEXT_BASE=0x10000
@@ -32,20 +45,60 @@ CONFIG_BOOTCOMMAND="run distro_bootcmd"
 CONFIG_CONS_INDEX=1
 CONFIG_BAUDRATE=115200
 
-# Environment
-CONFIG_ENV_IS_IN_FAT=y
-CONFIG_ENV_FAT_INTERFACE="mmc"
-CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
+# Environment - Updated for eMMC storage
+CONFIG_ENV_IS_IN_MMC=y
+CONFIG_ENV_MMC_DEVICE=2
+CONFIG_ENV_OFFSET=0x20000
+CONFIG_ENV_SIZE=0x20000
+CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
+CONFIG_ENV_OFFSET_REDUND=0x40000
+
+# Partition Support - GPT for Android compatibility 
+CONFIG_EFI_PARTITION=y
+CONFIG_CMD_GPT=y
+CONFIG_PARTITION_UUIDS=y
+CONFIG_PARTITION_TYPE_GUID=y
+CONFIG_CMD_PART=y
+CONFIG_SPL_PARTITION_UUIDS=y
+
+# Boot Configuration - eMMC boot support
+CONFIG_BOOTCOMMAND="mmc dev 2; if mmc rescan; then if run loadbootscript; then run bootscript; else if run loadimage; then run mmcboot; else run netboot; fi; fi; else run netboot; fi"
+CONFIG_EXTRA_ENV_SETTINGS="console=ttyS0,115200\0" \
+	"fdt_high=0xffffffffffffffff\0" \
+	"initrd_high=0xffffffffffffffff\0" \
+	"kernel_addr_r=0x40080000\0" \
+	"fdt_addr_r=0x4FA00000\0" \
+	"scriptaddr=0x40090000\0" \
+	"pxefile_addr_r=0x40200000\0" \
+	"ramdisk_addr_r=0x4FE00000\0" \
+	"boot_targets=mmc2 mmc0 mmc1 usb0 pxe dhcp\0" \
+	"mmcdev=2\0" \
+	"mmcpart=9\0" \
+	"mmcroot=/dev/mmcblk2p9 rootfstype=ext4 rootwait\0" \
+	"mmcargs=setenv bootargs console=${console} root=${mmcroot}\0" \
+	"loadbootscript=fatload mmc ${mmcdev}:${mmcpart} ${scriptaddr} boot.scr\0" \
+	"bootscript=echo Running bootscript from mmc${mmcdev} ...; source ${scriptaddr}\0" \
+	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${kernel_addr_r} zImage\0" \
+	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr_r} sun50i-h713-hy300.dtb\0" \
+	"mmcboot=echo Booting from mmc${mmcdev} ...; run mmcargs; if run loadfdt; then bootz ${kernel_addr_r} - ${fdt_addr_r}; else echo WARN: Cannot load the DT; fi\0" \
+	"netboot=echo Booting from net ...; run netargs; if tftpboot ${kernel_addr_r} zImage; then if tftpboot ${fdt_addr_r} sun50i-h713-hy300.dtb; then bootz ${kernel_addr_r} - ${fdt_addr_r}; else echo WARN: Cannot load the DT; fi; fi\0"
 
 # Networking
 CONFIG_NETDEVICES=y
 
 # USB (disabled for initial boot testing)
 
-# Storage
+# Storage - eMMC specific configuration
 CONFIG_MMC=y
 CONFIG_MMC_SUNXI=y
 CONFIG_SPL_MMC_SUPPORT=y
+CONFIG_MMC_HS400_SUPPORT=y
+CONFIG_MMC_HS200_SUPPORT=y
+CONFIG_MMC_WRITE=y
+CONFIG_CMD_MMC=y
+
+# Additional eMMC slot configuration (for boot from eMMC)
+CONFIG_MMC_SUNXI_SLOT_EXTRA=2
 
 # FEL Mode Support
 CONFIG_SPL_FEL=y
