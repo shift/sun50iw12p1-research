@@ -631,10 +631,27 @@
 		 * TV Display System (tvdisp@5000000)
 		 * HDMI input display processing
 		 */
+		iommu: iommu@30f0000 {
+			compatible = "allwinner,sun50i-h6-iommu";
+			reg = <0x030f0000 0x10000>;
+			interrupts = <0 57 4>; /* GIC_SPI 57 IRQ_TYPE_LEVEL_HIGH */
+			clocks = <&ccu 25>; /* CLK_BUS_IOMMU */
+			resets = <&ccu 15>; /* RST_BUS_IOMMU */
+			#iommu-cells = <2>;
+		};
+
+		power_domains: power-controller@1c20e00 {
+			compatible = "allwinner,sun50i-h6-ppu";
+			reg = <0x01c20e00 0x200>;
+			clocks = <&ccu 25>; /* CLK_BUS_IOMMU */
+			resets = <&ccu 15>; /* RST_BUS_IOMMU */
+			#power-domain-cells = <1>;
+		};
+
 		tvdisp: tvdisp@5000000 {
 			compatible = "allwinner,sunxi-tvsystem-iommu-dev";
 			reg = <0x05000000 0x1000>;
-			/* iommus = <&iommu 3 1>; */ /* Stream 0x03, Context 0x01 - TODO: Add IOMMU */
+			iommus = <&iommu 3 1>; /* Stream 0x03, Context 0x01 - IOMMU enabled */
 			status = "okay";
 		};
 
@@ -668,9 +685,9 @@
 				 <&ccu 55>;   /* RST_BUS_DEMOD */
 			reset-names = "reset_bus_disp", "reset_bus_tvcap", "reset_bus_demod";
 			
-			/* Power domain integration - TODO: Add power domains */
-			/* power-domains = <&power_domains 2>, <&power_domains 1>; */
-			/* power-domain-names = "pd_tvcap", "pd_tvfe"; */
+			/* Power domain integration - enabled */
+			power-domains = <&power_domains 2>, <&power_domains 1>;
+			power-domain-names = "pd_tvcap", "pd_tvfe";
 			
 			status = "okay";
 		};
@@ -682,7 +699,7 @@
 		tvcap: tvcap@6800000 {
 			compatible = "allwinner,sunxi-tvsystem-iommu-dev";
 			reg = <0x06800000 0x1000>;
-			/* iommus = <&iommu 4 1>; */ /* Stream 0x04, Context 0x01 - TODO: Add IOMMU */
+			iommus = <&iommu 4 1>; /* Stream 0x04, Context 0x01 - IOMMU enabled */
 			status = "okay";
 		};
 
