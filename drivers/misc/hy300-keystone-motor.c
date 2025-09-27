@@ -99,6 +99,9 @@ struct hy300_motor {
 	/* Prometheus metrics */
 	struct motor_metrics metrics;
 	struct device *metrics_device;
+	
+	/* Accelerometer integration */
+	char accelerometer_type[32];
 };
 
 /**
@@ -479,6 +482,35 @@ static ssize_t homed_show(struct device *dev, struct device_attribute *attr, cha
 static DEVICE_ATTR_RW(position);
 static DEVICE_ATTR_WO(home);
 static DEVICE_ATTR_RO(max_position);
+
+/**
+ * accelerometer_type_show - Show detected accelerometer type
+ */
+static ssize_t accelerometer_type_show(struct device *dev,
+			       struct device_attribute *attr, char *buf)
+{
+	struct hy300_motor *motor = dev_get_drvdata(dev);
+	return sprintf(buf, "%s\n", motor->accelerometer_type);
+}
+
+/**
+ * accelerometer_type_store - Set detected accelerometer type
+ */
+static ssize_t accelerometer_type_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct hy300_motor *motor = dev_get_drvdata(dev);
+	char *newline;
+	strscpy(motor->accelerometer_type, buf, sizeof(motor->accelerometer_type));
+	/* Remove trailing newline if present */
+	newline = strchr(motor->accelerometer_type, '\n');
+	if (newline)
+		*newline = '\0';
+	return count;
+}
+static DEVICE_ATTR_RW(accelerometer_type);
+
 static DEVICE_ATTR_RO(homed);
 
 static struct attribute *hy300_motor_attrs[] = {
@@ -486,6 +518,7 @@ static struct attribute *hy300_motor_attrs[] = {
 	&dev_attr_home.attr,
 	&dev_attr_max_position.attr,
 	&dev_attr_homed.attr,
+	&dev_attr_accelerometer_type.attr,
 	NULL,
 };
 
@@ -598,6 +631,9 @@ static int hy300_motor_probe(struct platform_device *pdev)
 	
 	/* Initialize metrics */
 	motor_metrics_init(motor);
+
+	/* Initialize accelerometer type to unknown */
+	strscpy(motor->accelerometer_type, "unknown", sizeof(motor->accelerometer_type));
 	
 	platform_set_drvdata(pdev, motor);
 	

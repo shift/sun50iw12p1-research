@@ -1,0 +1,14 @@
+[Unit]
+Description=HY300 Accelerometer Detection Service
+After=local-fs.target
+Wants=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/hy300/hy300-accelerometer-service.py --detect-once
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
