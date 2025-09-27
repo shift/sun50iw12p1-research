@@ -4,7 +4,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  hy300KodiPackages = pkgs.callPackage ./packages/kodi-hy300-plugins.nix {};
+  hy300KodiPackages = pkgs.callPackage ./packages/kodi-hy300-plugins-simple.nix {};
 in
 
 {

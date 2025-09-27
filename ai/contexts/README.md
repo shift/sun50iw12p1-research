@@ -11,6 +11,10 @@ This directory contains context information to help AI agents complete tasks eff
 - `development-environment.md` - Development environment setup
 - `sunxi-tools.md` - Sunxi tools usage and FEL mode
 - `hardware-safety.md` - Hardware safety protocols
+- `uboot-integration.md` - U-Boot development and FEL testing standards
+- `driver-integration-strategy.md` - Systematic driver integration methodology
+- `hardware-testing-protocol.md` - FEL mode testing and recovery procedures
+- `audio-display-integration.md` - Projector audio/display system integration
 
 ### Phase VIII VM Testing and Integration
 - `phase8-vm-testing.md` - Phase VIII overview and objectives
@@ -34,4 +38,8 @@ AI agents should reference relevant context files when working on tasks to ensur
 **For Kodi Integration**: Use `kodi-integration.md`, `vm-testing-validation.md`
 **For Metrics Collection**: Use `prometheus-metrics.md`, `kodi-integration.md`
 **For Hardware Work**: Use `hardware.md`, `hardware-safety.md`, `sunxi-tools.md`
+**For U-Boot Development**: Use `uboot-integration.md`, `hardware-testing-protocol.md`
+**For Driver Integration**: Use `driver-integration-strategy.md`, `hardware-testing-protocol.md`
+**For Audio/Display**: Use `audio-display-integration.md`, `driver-integration-strategy.md`
+**For Hardware Testing**: Use `hardware-testing-protocol.md`, `hardware-safety.md`
 **For Agent Delegation**: Use `delegation-standards.md`, `current-status.md`

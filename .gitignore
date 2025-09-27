@@ -106,3 +106,11 @@ hexdump_output.txt
 *tvcap-clock-patch.patch
 *tvtop_register_enhancement.patch
 *tvtop_register_interface.patch
+
+# Binary files - Phase VIII
+*.qcow2
+*.dtb
+test-*
+**/build/
+**/__pycache__/
+tools/accelerometer_detection

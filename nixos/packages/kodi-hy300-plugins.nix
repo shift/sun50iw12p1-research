@@ -111,7 +111,7 @@ EOF
 EOF
       
       # Create main plugin file
-      cat > $out/share/kodi/addons/plugin.video.fenlightam/fenlightam.py << 'EOF'
+      cat > $out/share/kodi/addons/plugin.video.fenlightam/fenlightam.py << 'FENLIGHTEOF'
 #!/usr/bin/env python3
 # FenLightAM - Lightweight Media Addon for Kodi
 
@@ -224,105 +224,11 @@ def main():
         xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url="", listitem=li)
         xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
-if __name__ == '__main__':
-    main()
-EOF
+      if __name__ == '__main__':
+          main()
+      EOF
       
-      # Create resources directory and settings
-      mkdir -p $out/share/kodi/addons/plugin.video.fenlightam/resources
-      
-      cat > $out/share/kodi/addons/plugin.video.fenlightam/resources/settings.xml << 'EOF'
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-    <category label="General">
-        <setting label="Enable Auto-Play" type="bool" id="auto_play" default="false"/>
-        <setting label="Default Quality" type="select" id="default_quality" default="720p" values="480p|720p|1080p|2160p"/>
-        <setting label="Search Timeout (seconds)" type="slider" id="search_timeout" default="30" range="10,5,60"/>
-    </category>
-    <category label="Interface">
-        <setting label="Show Plot in Lists" type="bool" id="show_plot" default="true"/>
-        <setting label="Show Ratings" type="bool" id="show_ratings" default="true"/>
-        <setting label="Items per Page" type="slider" id="items_per_page" default="25" range="10,5,100"/>
-    </category>
-</settings>
-EOF
-      
-      # Create placeholder icons
-      echo "PNG placeholder" > $out/share/kodi/addons/plugin.video.fenlightam/icon.png
-      echo "JPEG placeholder" > $out/share/kodi/addons/plugin.video.fenlightam/fanart.jpg
-    '';
-    
-    meta = with lib; {
-      description = "FenLightAM addon for Kodi";
-      license = licenses.gpl3Only;
-      platforms = platforms.all;
-    };
-  };
-
-  # CocoScrapers Addon for Kodi
-  kodi-addon-cocoscrapers = pkgs.stdenv.mkDerivation {
-    pname = "kodi-addon-cocoscrapers";
-    version = "1.0.0";
-    
-    src = builtins.toFile "dummy" "";
-    
-    installPhase = ''
-      mkdir -p $out/share/kodi/addons/script.module.cocoscrapers
-      
-      # Create addon.xml for CocoScrapers
-      cat > $out/share/kodi/addons/script.module.cocoscrapers/addon.xml << 'EOF'
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.module.cocoscrapers" 
-       name="CocoScrapers" 
-       version="1.0.0" 
-       provider-name="CocoTeam">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0"/>
-    <import addon="script.module.requests" version="2.22.0"/>
-    <import addon="script.module.beautifulsoup4" version="4.6.3"/>
-  </requires>
-  <extension point="xbmc.python.module" library="lib"/>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en_GB">CocoScrapers - Web Scraping Module</summary>
-    <description lang="en_GB">
-      CocoScrapers provides web scraping functionality for Kodi addons.
-      Contains scrapers for various content sources with robust error handling.
-      Designed to work efficiently with media center addons like FenLightAM.
-    </description>
-    <disclaimer lang="en_GB">
-      This module provides scraping capabilities only. Users are responsible for compliance with applicable laws.
-    </disclaimer>
-    <platform>all</platform>
-    <license>GPL-3.0</license>
-    <source>https://github.com/CocoTeam/script.module.cocoscrapers</source>
-    <assets>
-      <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
-    </assets>
-  </extension>
-</addon>
-EOF
-      
-      # Create lib directory and main module
-      mkdir -p $out/share/kodi/addons/script.module.cocoscrapers/lib/cocoscrapers
-      
-      cat > $out/share/kodi/addons/script.module.cocoscrapers/lib/cocoscrapers/__init__.py << 'EOF'
-"""
-CocoScrapers Module for Kodi
-Web scraping functionality for media addons
-"""
-
-__version__ = "1.0.0"
-__author__ = "CocoTeam"
-
-# Main scraper classes and utilities
-from .scrapers import MovieScraper, TVScraper
-from .utils import get_scrapers, scrape_sources
-
-__all__ = ['MovieScraper', 'TVScraper', 'get_scrapers', 'scrape_sources']
-EOF
-      
-      cat > $out/share/kodi/addons/script.module.cocoscrapers/lib/cocoscrapers/scrapers.py << 'EOF'
+      cat > $out/share/kodi/addons/script.module.cocoscrapers/lib/cocoscrapers/scrapers.py << 'SCRAPERSEOF'
 """
 CocoScrapers - Main scraper classes
 """
@@ -389,9 +295,9 @@ class TVScraper(BaseScraper):
                 'url': f'placeholder://tv/{quote(title)}/s{season:02d}e{episode:02d}'
             }
         ]
-EOF
+SCRAPERSEOF
       
-      cat > $out/share/kodi/addons/script.module.cocoscrapers/lib/cocoscrapers/utils.py << 'EOF'
+      cat > $out/share/kodi/addons/script.module.cocoscrapers/lib/cocoscrapers/utils.py << 'UTILSEOF'
 """
 CocoScrapers - Utility functions
 """
@@ -422,7 +328,7 @@ def scrape_sources(content_type, **kwargs):
         )
     else:
         return []
-EOF
+UTILSEOF
       
       # Create placeholder icons
       echo "PNG placeholder" > $out/share/kodi/addons/script.module.cocoscrapers/icon.png
@@ -435,6 +341,290 @@ EOF
       platforms = platforms.all;
     };
   };
+
+  # Python scripts as separate files to avoid quoting issues
+  keystoneMainScript = ''
+#!/usr/bin/env python3
+# HY300 Keystone Correction Kodi Plugin
+
+import sys
+import os
+import subprocess
+import xbmc
+import xbmcgui
+import xbmcplugin
+import xbmcaddon
+from urllib.parse import parse_qsl
+
+# Get addon info
+addon = xbmcaddon.Addon()
+addon_handle = int(sys.argv[1])
+addon_url = sys.argv[0]
+addon_name = addon.getAddonInfo('name')
+
+def execute_command(command):
+    """Execute keystone command via HY300 service"""
+    try:
+        # In simulation mode, just log the command
+        if os.path.exists('/var/lib/hy300/simulation_mode'):
+            xbmc.log(f"HY300 Keystone: Simulated command: {command}", xbmc.LOGINFO)
+            xbmcgui.Dialog().notification(addon_name, f"Simulated: {command}", xbmcgui.NOTIFICATION_INFO, 2000)
+            return
+        
+        # Real hardware mode - execute via service
+        result = subprocess.run(
+            ['systemctl', 'call', 'hy300-keystone.service', 'Execute', command],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            xbmcgui.Dialog().notification(addon_name, f"Command executed: {command}", xbmcgui.NOTIFICATION_INFO, 2000)
+        else:
+            xbmcgui.Dialog().notification(addon_name, f"Command failed: {result.stderr}", xbmcgui.NOTIFICATION_ERROR, 3000)
+            
+    except subprocess.TimeoutExpired:
+        xbmcgui.Dialog().notification(addon_name, "Command timeout", xbmcgui.NOTIFICATION_ERROR, 3000)
+    except Exception as e:
+        xbmc.log(f"HY300 Keystone error: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().notification(addon_name, f"Error: {e}", xbmcgui.NOTIFICATION_ERROR, 3000)
+
+def show_main_menu():
+    """Show main keystone correction menu"""
+    # Manual adjustments
+    li = xbmcgui.ListItem("Manual Adjustment")
+    li.setInfo('video', {'title': 'Manual Adjustment', 'plot': 'Manually adjust keystone using arrow keys'})
+    url = f"{addon_url}?action=manual"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+    
+    # Auto correction
+    li = xbmcgui.ListItem("Auto Correction")
+    li.setInfo('video', {'title': 'Auto Correction', 'plot': 'Automatically correct keystone using accelerometer'})
+    url = f"{addon_url}?action=auto"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+    
+    # Load profile
+    li = xbmcgui.ListItem("Load Profile")
+    li.setInfo('video', {'title': 'Load Profile', 'plot': 'Load saved keystone correction profile'})
+    url = f"{addon_url}?action=load_profile"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+    
+    # Save profile
+    li = xbmcgui.ListItem("Save Profile")
+    li.setInfo('video', {'title': 'Save Profile', 'plot': 'Save current keystone settings as profile'})
+    url = f"{addon_url}?action=save_profile"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+    
+    # Reset to center
+    li = xbmcgui.ListItem("Reset to Center")
+    li.setInfo('video', {'title': 'Reset to Center', 'plot': 'Reset keystone correction to center position'})
+    url = f"{addon_url}?action=reset"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+    
+    # Status
+    li = xbmcgui.ListItem("Status")
+    li.setInfo('video', {'title': 'Status', 'plot': 'Show current keystone correction status'})
+    url = f"{addon_url}?action=status"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+    
+    # Calibrate
+    li = xbmcgui.ListItem("Calibrate")
+    li.setInfo('video', {'title': 'Calibrate', 'plot': 'Calibrate accelerometer for auto-correction'})
+    url = f"{addon_url}?action=calibrate"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+    
+    # Digital correction menu
+    li = xbmcgui.ListItem("Digital Correction")
+    li.setInfo('video', {'title': 'Digital Correction', 'plot': 'Software-based keystone correction options'})
+    url = f"{addon_url}?action=digital_menu"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(addon_handle)
+
+def show_manual_adjustment():
+    """Show manual adjustment options"""
+    adjustments = [
+        ("Up", "up"),
+        ("Down", "down"), 
+        ("Left", "left"),
+        ("Right", "right"),
+        ("Fine Up", "fine_up"),
+        ("Fine Down", "fine_down"),
+        ("Fine Left", "fine_left"), 
+        ("Fine Right", "fine_right")
+    ]
+    
+    for label, command in adjustments:
+        li = xbmcgui.ListItem(label)
+        url = f"{addon_url}?action=execute&command={command}"
+        xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+    
+    xbmcplugin.endOfDirectory(addon_handle)
+
+def show_auto_correction():
+    """Show auto correction options"""
+    li = xbmcgui.ListItem("Start Auto Correction")
+    li.setInfo('video', {'title': 'Start Auto Correction', 'plot': 'Begin automatic keystone correction using accelerometer'})
+    url = f"{addon_url}?action=execute&command=auto"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+    
+    li = xbmcgui.ListItem("Stop Auto Correction")
+    li.setInfo('video', {'title': 'Stop Auto Correction', 'plot': 'Stop automatic correction and maintain current position'})
+    url = f"{addon_url}?action=execute&command=stop_auto"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+    
+    xbmcplugin.endOfDirectory(addon_handle)
+
+def show_profiles():
+    """Show saved profiles"""
+    try:
+        # Get list of saved profiles from HY300 service
+        result = subprocess.run(['hy300-keystone', 'list-profiles'], capture_output=True, text=True, timeout=5)
+        
+        if result.returncode == 0:
+            profiles = result.stdout.strip().split('\n')
+            for profile in profiles:
+                if profile:
+                    li = xbmcgui.ListItem(profile)
+                    url = f"{addon_url}?action=load_profile_exec&profile={profile}"
+                    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+        else:
+            li = xbmcgui.ListItem("No profiles found")
+            xbmcplugin.addDirectoryItem(handle=addon_handle, url="", listitem=li)
+            
+    except Exception as e:
+        li = xbmcgui.ListItem(f"Error loading profiles: {e}")
+        xbmcplugin.addDirectoryItem(handle=addon_handle, url="", listitem=li)
+    
+    xbmcplugin.endOfDirectory(addon_handle)
+
+def save_profile_dialog():
+    """Show dialog to save current settings as profile"""
+    dialog = xbmcgui.Dialog()
+    profile_name = dialog.input("Enter profile name:", type=xbmcgui.INPUT_ALPHANUM)
+    
+    if profile_name:
+        execute_command(f"save {profile_name}")
+
+def show_status():
+    """Show current keystone status"""
+    try:
+        result = subprocess.run(['hy300-keystone', 'status'], capture_output=True, text=True, timeout=5)
+        
+        if result.returncode == 0:
+            status = result.stdout.strip()
+            xbmcgui.Dialog().textviewer("Keystone Status", status)
+        else:
+            xbmcgui.Dialog().ok(addon_name, "Could not retrieve status")
+            
+    except Exception as e:
+        xbmcgui.Dialog().ok(addon_name, f"Status error: {e}")
+
+def calibrate_system():
+    """Calibrate the accelerometer"""
+    dialog = xbmcgui.Dialog()
+    
+    if dialog.yesno(addon_name, "Place projector on level surface and click OK to calibrate"):
+        try:
+            result = subprocess.run(['hy300-keystone', 'calibrate'], capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                dialog.ok(addon_name, "Calibration completed successfully!")
+            else:
+                dialog.ok(addon_name, f"Calibration failed: {result.stderr}")
+                
+        except Exception as e:
+            dialog.ok(addon_name, f"Calibration error: {e}")
+
+def show_digital_menu():
+    """Show digital correction menu"""
+    li = xbmcgui.ListItem("Corner Adjustment")
+    li.setInfo('video', {'title': 'Corner Adjustment', 'plot': 'Adjust individual corners digitally'})
+    url = f"{addon_url}?action=digital_corners"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+    
+    li = xbmcgui.ListItem("Preset Corrections")
+    li.setInfo('video', {'title': 'Preset Corrections', 'plot': 'Apply common keystone corrections'})
+    url = f"{addon_url}?action=digital_presets" 
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+    
+    li = xbmcgui.ListItem("Custom Transform")
+    li.setInfo('video', {'title': 'Custom Transform', 'plot': 'Enter custom transformation matrix'})
+    url = f"{addon_url}?action=digital_custom"
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+    
+    xbmcplugin.endOfDirectory(addon_handle)
+
+def digital_corners_adjustment():
+    """Show digital corner adjustment interface"""
+    corners = [
+        ("Top Left", "tl"),
+        ("Top Right", "tr"),
+        ("Bottom Left", "bl"), 
+        ("Bottom Right", "br")
+    ]
+    
+    for label, corner in corners:
+        li = xbmcgui.ListItem(f"Adjust {label}")
+        # This would open a more complex interface in real implementation
+        url = f"{addon_url}?action=execute&command=digital_adjust_{corner}"
+        xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+    
+    xbmcplugin.endOfDirectory(addon_handle)
+
+# Main plugin logic
+def main():
+    params = dict(parse_qsl(sys.argv[2][1:]))
+    action = params.get('action')
+    
+    if action is None:
+        show_main_menu()
+    elif action == 'manual':
+        show_manual_adjustment()
+    elif action == 'auto':
+        show_auto_correction()
+    elif action == 'load_profile':
+        show_profiles()
+    elif action == 'save_profile':
+        save_profile_dialog()
+    elif action == 'reset':
+        execute_command('reset')
+    elif action == 'status':
+        show_status()
+    elif action == 'calibrate':
+        calibrate_system()
+    elif action == 'execute':
+        command = params.get(''command'', '''')
+        execute_command(command)
+    elif action == 'load_profile_exec':
+        profile = params.get(''profile'', '''')
+        execute_command(f'load {profile}')
+    elif action == 'digital_menu':
+        show_digital_menu()
+    elif action == 'digital_corners':
+        digital_corners_adjustment()
+    elif action == 'digital_presets':
+        # Show preset digital corrections
+        presets = [
+            ("Slight Keystone Up", "digital 0,-10:1920,-10:1920,1090:0,1090"),
+            ("Slight Keystone Down", "digital 0,10:1920,10:1920,1070:0,1070"),
+            ("Perspective Left", "digital 10,0:1920,0:1910,1080:0,1080"),
+            ("Perspective Right", "digital 0,0:1910,0:1920,1080:10,1080")
+        ]
+        
+        for label, command in presets:
+            li = xbmcgui.ListItem(label)
+            url = f"{addon_url}?action=execute&command={command}"
+            xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+        
+        xbmcplugin.endOfDirectory(addon_handle)
+    elif action == 'digital_custom':
+        digital_corners_adjustment()
+
+if __name__ == '__main__':
+    main()
+  '';
 
   # HY300 Keystone Correction Plugin for Kodi
   kodi-plugin-hy300-keystone = pkgs.stdenv.mkDerivation {
@@ -483,7 +673,7 @@ EOF
       EOF
       
       # Create main plugin file
-      cat > $out/share/kodi/addons/plugin.video.hy300keystone/main.py << 'EOF'
+      echo '${keystoneMainScript}' > $out/share/kodi/addons/plugin.video.hy300keystone/main.py
       #!/usr/bin/env python3
       # HY300 Keystone Correction Kodi Plugin
       
@@ -694,7 +884,7 @@ EOF
           elif action == 'calibrate':
               calibrate_system()
           elif action == 'execute':
-              command = params.get('command', '')
+        command = params.get('command', '')
               execute_command(command)
           elif action == 'load_profile_exec':
               profile = params.get('profile', '')
@@ -723,7 +913,6 @@ EOF
       
       if __name__ == '__main__':
           main()
-      EOF
       
       # Create settings.xml for plugin configuration
       cat > $out/share/kodi/addons/plugin.video.hy300keystone/resources/settings.xml << 'EOF'
@@ -833,7 +1022,7 @@ EOF
       EOF
       
       # Create main WiFi plugin
-      cat > $out/share/kodi/addons/plugin.program.hy300wifi/main.py << 'EOF'
+      cat > $out/share/kodi/addons/plugin.program.hy300wifi/main.py << 'WIFIEOF'
       #!/usr/bin/env python3
       # HY300 WiFi Setup Kodi Plugin
       
@@ -1116,7 +1305,7 @@ EOF
       
       if __name__ == '__main__':
           main()
-      EOF
+      WIFIEOF
     '';
     
     meta = with lib; {

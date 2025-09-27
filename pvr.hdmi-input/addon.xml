@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="pvr.hdmi-input"
+       version="1.0.0"
+       name="HDMI Input PVR Client"
+       provider-name="HY300 Project">
+  <requires>
+    <import addon="xbmc.pvr" version="8.2.0"/>
+    <import addon="kodi.binary.global.main" version="1.3.0"/>
+    <import addon="kodi.binary.global.general" version="1.0.5"/>
+  </requires>
+  <extension point="xbmc.pvrclient"
+            library_linux="pvr.hdmi-input.so">
+    <supports_epg>true</supports_epg>
+    <supports_tv>true</supports_tv>
+    <supports_radio>false</supports_radio>
+    <supports_recordings>false</supports_recordings>
+    <supports_timers>false</supports_timers>
+    <supports_channel_groups>false</supports_channel_groups>
+    <supports_channel_scan>false</supports_channel_scan>
+    <supports_channel_settings>true</supports_channel_settings>
+    <supports_lastplayed>false</supports_lastplayed>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>linux</platform>
+    <license>GPL-2.0-or-later</license>
+    <source>https://github.com/hy300-project/pvr.hdmi-input</source>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+    <summary lang="en_GB">HDMI Input PVR Client for HY300 Projector</summary>
+    <description lang="en_GB">
+      PVR client that presents HDMI input from the HY300 projector's TV capture hardware
+      as a live TV channel in Kodi. Enables seamless switching between media content
+      and external HDMI devices using the projector's remote control.
+      
+      Features:
+      - HDMI input as Live TV channel
+      - Hot-plug detection and status monitoring
+      - Multi-format input support (720p/1080p @ 30/60fps)
+      - Audio/video synchronization
+      - Integration with V4L2 capture driver
+    </description>
+    <disclaimer lang="en_GB">
+      This addon requires the HY300 HDMI input driver and V4L2 device (/dev/video0).
+      Hardware functionality depends on proper kernel module installation.
+    </disclaimer>
+    <news>
+v1.0.0:
+- Initial release
+- Basic HDMI input channel support
+- V4L2 capture integration
+- Signal status monitoring
+    </news>
+  </extension>
+</addon>

@@ -539,7 +539,7 @@ EOF
           };
 
           # HY300 Kodi Configuration Package
-          packages.x86_64-linux.hy300-kodi = nixpkgs.legacyPackages.x86_64-linux.callPackage ./nixos/packages/kodi-hy300-plugins.nix {};
+          packages.x86_64-linux.hy300-kodi = nixpkgs.legacyPackages.x86_64-linux.callPackage ./nixos/packages/kodi-hy300-plugins-simple.nix {};
 
           # Simple VM configuration for testing
          nixosConfigurations.hy300-vm = nixpkgs.lib.nixosSystem {
@@ -875,16 +875,19 @@ EOF
               
               services.getty.autologinUser = "hy300";
               
-               environment.systemPackages = with pkgs; [
-                kodi
-                firefox
-                htop
-                curl
-                neofetch
-                # HY300 services embedded directly in flake
-                hy300-keystone-service
-                hy300-wifi-service
-              ];
+                environment.systemPackages = with pkgs; [
+                 kodi
+                 firefox
+                 htop
+                 curl
+                 neofetch
+                 # IR Remote control support
+                 lirc
+                 v4l-utils
+                 # HY300 services embedded directly in flake
+                 hy300-keystone-service
+                 hy300-wifi-service
+               ];
               
               # Simple Kodi systemd service
               systemd.services.kodi = {
@@ -912,36 +915,122 @@ EOF
                  };
                };
                
-               systemd.services.hy300-wifi = {
-                 description = "HY300 WiFi Service";
-                 wantedBy = [ "multi-user.target" ];
-                 serviceConfig = {
-                   Type = "simple";
-                   ExecStart = "${hy300-wifi-service}/bin/hy300-wifi --simulation";
-                   Restart = "always";
-                   StateDirectory = "hy300";
-                 };
-               };
-              
-              services.xserver = {
-                enable = true;
-                displayManager.lightdm.enable = true;
-                windowManager.openbox.enable = true;
-                displayManager.autoLogin = {
-                  enable = true;
-                  user = "hy300";
+                systemd.services.hy300-wifi = {
+                  description = "HY300 WiFi Service";
+                  wantedBy = [ "multi-user.target" ];
+                  serviceConfig = {
+                    Type = "simple";
+                    ExecStart = "${hy300-wifi-service}/bin/hy300-wifi --simulation";
+                    Restart = "always";
+                    StateDirectory = "hy300";
+                  };
                 };
-              };
+
+                # IR Remote Control Configuration  
+                services.lirc = {
+                  enable = true;
+                  options = "nodaemon = False\ndriver = devinput\ndevice = auto";
+                  configs = [ 
+                    # HY300 Remote Control Configuration - NEC Protocol
+                    ''
+                    begin remote
+                        name          HY300_REMOTE
+                        bits          16
+                        flags         SPACE_ENC|CONST_LENGTH
+                        eps           30
+                        aeps          100
+                        
+                        # NEC protocol timing (microseconds)
+                        header        9000    4500
+                        one           560     1690
+                        zero          560     560
+                        ptrail        560
+                        repeat        9000    2250
+                        gap           108000
+                        toggle_bit_mask 0x0
+                        
+                        frequency     38000
+                        duty_cycle    33
+                        
+                        begin codes
+                            # Navigation keys
+                            KEY_POWER       0x14
+                            KEY_UP          0x40
+                            KEY_DOWN        0x41  
+                            KEY_LEFT        0x42
+                            KEY_RIGHT       0x43
+                            KEY_OK          0x44
+                            KEY_BACK        0x45
+                            KEY_HOME        0x46
+                            
+                            # Volume controls
+                            KEY_VOLUMEUP    0x47
+                            KEY_VOLUMEDOWN  0x48
+                            KEY_MUTE        0x4F
+                            
+                            # Media controls
+                            KEY_PLAYPAUSE   0x49
+                            KEY_STOP        0x4A
+                            KEY_FASTFORWARD 0x4B
+                            KEY_REWIND      0x4C
+                            
+                            # Function keys
+                            KEY_MENU        0x4D
+                            KEY_SOURCE      0x4E
+                            KEY_INFO        0x50
+                            KEY_SUBTITLE    0x51
+                            KEY_AUDIO       0x52
+                            
+                            # Color keys
+                            KEY_RED         0x53
+                            KEY_GREEN       0x54
+                            KEY_YELLOW      0x55
+                            KEY_BLUE        0x56
+                        end codes
+                    end remote
+                    ''
+                  ];
+                };
+                
+                # Kodi IR Remote Keymap Installation
+                systemd.tmpfiles.rules = [
+                  "d /home/hy300/.kodi 0755 hy300 users -"
+                  "d /home/hy300/.kodi/userdata 0755 hy300 users -" 
+                  "d /home/hy300/.kodi/userdata/keymaps 0755 hy300 users -"
+                ];
+                
+                environment.etc."hy300-kodi-keymap.xml".source = ./docs/templates/hy300-kodi-keymap.xml;
+                
+                # Copy Kodi keymap on system activation
+                system.activationScripts.hy300-kodi-keymap = ''
+                  mkdir -p /home/hy300/.kodi/userdata/keymaps
+                  cp /etc/hy300-kodi-keymap.xml /home/hy300/.kodi/userdata/keymaps/hy300-remote.xml
+                  chown hy300:users /home/hy300/.kodi/userdata/keymaps/hy300-remote.xml
+                '';
+                
+                # IR kernel modules for VM simulation
+                boot.kernelModules = [ "lirc_dev" "ir-lirc-codec" "ir-nec-decoder" ];
               
-              hardware.opengl.enable = true;
-              
-              # Use PulseAudio instead of PipeWire for VM simplicity
-              security.rtkit.enable = true;
-              services.pipewire.enable = false;
-              hardware.pulseaudio = {
-                enable = true;
-                support32Bit = true;
-              };
+               services.xserver = {
+                 enable = true;
+                 displayManager.lightdm.enable = true;
+                 windowManager.openbox.enable = true;
+               };
+               
+               services.displayManager.autoLogin = {
+                 enable = true;
+                 user = "hy300";
+               };
+               
+               hardware.graphics.enable = true;
+               
+               # Use PulseAudio instead of PipeWire for VM simplicity
+               security.rtkit.enable = true;
+               services.pipewire.enable = false;
+               services.pulseaudio = {
+                 enable = true;
+                 support32Bit = true;
+               };
               
               networking.hostName = "hy300-vm";
               networking.firewall.allowedTCPPorts = [ 22 80 8080 ];

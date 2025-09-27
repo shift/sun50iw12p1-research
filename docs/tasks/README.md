@@ -46,4 +46,16 @@ Each task file should follow this format:
 
 ## Current Task Counter
 
-Next task number: 022
+Next task number: 032
+
+## Recently Created Tasks
+
+### Hardware Readiness Tasks (Tasks 026-031)
+- **Task 026**: IR Remote Integration - Complete IR remote control implementation
+- **Task 027**: WiFi Driver Integration - AIC8800 WiFi driver integration
+- **Task 028**: Mali GPU Driver Selection - Panfrost vs proprietary decision and implementation
+- **Task 029**: Audio and SPDIF Configuration - Complete audio system implementation
+- **Task 030**: Device Tree Completion - Add remaining hardware nodes
+- **Task 031**: Hardware Testing Preparation - FEL mode testing framework
+
+These tasks address the hardware readiness gaps identified after the U-Boot eMMC configuration update, providing systematic coverage of missing components for complete hardware enablement.
