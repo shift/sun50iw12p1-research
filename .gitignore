@@ -118,3 +118,11 @@ sunxi-fel
 test-h713-fel.sh
 sunxi-fel-h713
 sunxi-tools-source/
+
+# FEL backups (local testing only)
+fel_backup*/
+fel_quick*/
+firmware_backup_*/
+
+# Sunxi-tools source (use upstream with patch)
+sunxi-tools-source/

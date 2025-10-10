@@ -16,11 +16,10 @@
           # ARM64 cross-compilation toolchain
           aarch64-toolchain = pkgs.pkgsCross.aarch64-multiplatform.buildPackages;
           
-          # Build latest sunxi-tools from source with H616/H713 support
-          sunxi-tools-latest = pkgs.sunxi-tools.overrideAttrs (oldAttrs: {
-            version = "2024-git-h713";
-            src = ./sunxi-tools-source;  # Use local modified source
-          });
+          # NOTE: Using standard sunxi-tools from nixpkgs
+          # Custom H713 binary available as ./sunxi-fel-h713 (built from patched source)
+          # See: sunxi-tools-h713-support.patch and SUNXI_TOOLS_H713_SUMMARY.md
+          sunxi-tools-latest = pkgs.sunxi-tools;
 
         in
         {
@@ -47,7 +46,7 @@
             elfutils
             
             # Sunxi-specific tools
-            sunxi-tools-latest  # Latest version with H616/H713 support
+            sunxi-tools  # Standard sunxi-tools (use ./sunxi-fel-h713 for H713 support)
             dtc  # Device tree compiler
             
             # Firmware analysis tools
