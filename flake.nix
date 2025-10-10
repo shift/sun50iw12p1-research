@@ -15,6 +15,12 @@
           
           # ARM64 cross-compilation toolchain
           aarch64-toolchain = pkgs.pkgsCross.aarch64-multiplatform.buildPackages;
+          
+          # Build latest sunxi-tools from source with H616/H713 support
+          sunxi-tools-latest = pkgs.sunxi-tools.overrideAttrs (oldAttrs: {
+            version = "2024-git-h713";
+            src = ./sunxi-tools-source;  # Use local modified source
+          });
 
         in
         {
@@ -41,7 +47,7 @@
             elfutils
             
             # Sunxi-specific tools
-            sunxi-tools
+            sunxi-tools-latest  # Latest version with H616/H713 support
             dtc  # Device tree compiler
             
             # Firmware analysis tools
@@ -88,7 +94,7 @@
             
             # Logic analyzer software (if GUI is available)
             sigrok-cli
-            pulseview
+            # pulseview  # Disabled due to CMake compatibility issue
           ];
 
           # Environment variables for cross-compilation

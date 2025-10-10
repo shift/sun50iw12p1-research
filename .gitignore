@@ -114,3 +114,7 @@ test-*
 **/build/
 **/__pycache__/
 tools/accelerometer_detection
+sunxi-fel
+test-h713-fel.sh
+sunxi-fel-h713
+sunxi-tools-source/
