@@ -9,6 +9,30 @@
  * The MIPS co-processor handles display engine control, panel timing,
  * and projector-specific hardware management.
  * 
+ *
+ * Memory Layout (validated from Android libmips.so analysis - Task 032):
+ * ========================================================================
+ * Physical Base Address: 0x4b100000
+ * Total Reserved Memory: 40MB (0x2800000)
+ *
+ * Region Breakdown:
+ *   Boot Region:       4KB @ offset 0x00000 (0x4b100000)
+ *     - MIPS bootloader and reset vector
+ *     - Minimal initialization code
+ *
+ *   Firmware Region:  12MB @ offset 0x01000 (0x4b101000)
+ *     - Main MIPS firmware (display.bin from factory)
+ *     - Display engine control logic
+ *     - HDMI input processing and downscaling (1080p to 720p)
+ *
+ *   TSE Region:        1MB @ offset 0xC01000 (0x4bd01000)
+ *     - Transport Stream Engine buffer
+ *     - Video stream processing workspace
+ *
+ *   Framebuffer:      26MB @ offset 0xD01000 (0x4be01000)
+ *     - Display framebuffer for 1280x720 native panel
+ *     - Multiple buffering support (26MB = ~14 full 720p RGBA buffers)
+ *
  * Based on reverse engineering of factory Android implementation.
  */
 
@@ -31,13 +55,19 @@
 #include <linux/delay.h>
 #include <linux/sysfs.h>
 
-/* MIPS Memory Layout (from factory analysis) */
+/*
+ * MIPS Memory Layout - Validated from Android libmips.so (Task 032)
+ *
+ * Note: Android analysis shows different region offsets than initial reverse engineering.
+ * Below defines updated to match Android-validated memory map.
+ */
 #define MIPS_BOOT_CODE_ADDR     0x4b100000  /* 4KB - MIPS reset vector */
 #define MIPS_FIRMWARE_ADDR      0x4b101000  /* 12MB - Main MIPS firmware */
-#define MIPS_DEBUG_ADDR         0x4bd01000  /* 1MB - Debug buffer */
-#define MIPS_CONFIG_ADDR        0x4be01000  /* 256KB - Configuration */
-#define MIPS_DATABASE_ADDR      0x4be41000  /* 1MB - TSE database */
-#define MIPS_FRAMEBUFFER_ADDR   0x4bf41000  /* 26MB - Frame buffer */
+#define MIPS_TSE_ADDR           0x4bd01000  /* 1MB - Transport Stream Engine */
+/* CONFIG and DATABASE regions merged into TSE in Android implementation */
+/* Legacy MIPS_DEBUG_ADDR aliased to MIPS_TSE_ADDR for compatibility */
+#define MIPS_FRAMEBUFFER_ADDR   0x4be01000  /* 26MB - Framebuffer (1280x720) */
+#define MIPS_DEBUG_ADDR         MIPS_TSE_ADDR  /* Legacy alias */
 #define MIPS_TOTAL_SIZE         0x2800000   /* 40MB total */
 
 /* Register Interface (from factory analysis) */
