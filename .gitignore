@@ -84,8 +84,10 @@ test_*.sh
 quick_test.py
 
 # Device-specific generated files (allow main deliverables)
-hy300_h713_defconfig
 !sun50i-h713-hy300.dts  # Allow main device tree deliverable
+!configs/*.defconfig     # Allow U-Boot defconfig files
+!configs/*.txt          # Allow boot scripts
+!configs/*.sh           # Allow build scripts
 
 # Analysis output
 binwalk_output/
