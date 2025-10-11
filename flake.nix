@@ -48,6 +48,7 @@
             # Sunxi-specific tools
             sunxi-tools  # Standard sunxi-tools (use ./sunxi-fel-h713 for H713 support)
             dtc  # Device tree compiler
+            libusb1  # Required for building sunxi-tools from source
             
             # Firmware analysis tools
             binwalk
