@@ -17,7 +17,7 @@ Implement the complete Kodi PVR client for HY300 HDMI input integration. The add
 - [x] V4L2 HDMI capture driver implemented (`drivers/media/platform/sunxi/sunxi-tvcap-enhanced.c`)
 - [x] Kodi PVR API research completed (`docs/KODI_PVR_API_RESEARCH.md`)
 - [x] Hardware integration design finalized (`docs/KODI_HDMI_INPUT_INTEGRATION_DESIGN.md`)
-- [ ] Build system configuration for Kodi addon compilation
+- [x] Build system configuration for Kodi addon compilation
 
 ## Acceptance Criteria
 
@@ -27,7 +27,7 @@ Implement the complete Kodi PVR client for HY300 HDMI input integration. The add
 - [ ] Stream processor for real-time video/audio handling
 - [ ] Signal monitor for HDMI connection status detection
 - [ ] EPG provider for basic program guide functionality
-- [ ] Build system integration with NixOS flake
+- [x] Build system integration with NixOS flake
 - [ ] Error handling and resource management
 - [ ] Memory-safe buffer management for high-throughput streaming
 - [ ] Hardware-accelerated demuxing support
@@ -123,10 +123,11 @@ HdmiClient
 - **Hardware Integration**: Leverage existing V4L2 driver capabilities fully
 
 **Build System Requirements:**
-- Cross-compilation support for ARM64 target
-- Kodi development headers and libraries
-- V4L2 library dependencies
-- NixOS packaging integration
+- [x] Cross-compilation support for ARM64 target
+- [x] Kodi development headers and libraries
+- [x] V4L2 library dependencies
+- [x] NixOS packaging integration - `nixos/packages/kodi-pvr-hdmi-input.nix` created
+- [x] Flake package entry added - build with `nix build .#kodi-pvr-hdmi-input`
 
 **Testing Strategy:**
 - Unit tests for individual components

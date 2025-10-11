@@ -546,6 +546,9 @@ EOF
 
           # HY300 Kodi Configuration Package
           packages.x86_64-linux.hy300-kodi = nixpkgs.legacyPackages.x86_64-linux.callPackage ./nixos/packages/kodi-hy300-plugins-simple.nix {};
+          
+          # Kodi PVR HDMI Input Addon
+          packages.x86_64-linux.kodi-pvr-hdmi-input = nixpkgs.legacyPackages.x86_64-linux.callPackage ./nixos/packages/kodi-pvr-hdmi-input.nix {};
 
           # Simple VM configuration for testing
          nixosConfigurations.hy300-vm = nixpkgs.lib.nixosSystem {
