@@ -439,9 +439,7 @@ in
         "rootwait"
         "quiet"
         "splash"
-        # Mali GPU optimization
-        "mali.pp_core_mask=0x7"
-        "mali.gp_core_mask=0x1"
+        # Panfrost GPU driver (open source)
         # CMA for video memory
         "cma=512M"
         # IR remote support
@@ -457,7 +455,7 @@ in
         "hy300-keystone-motor"
         "sunxi-tvcap-enhanced"
         # Standard modules
-        "mali_kbase"
+        "panfrost"
         "lirc_dev"
         "ir-rc5-decoder"
       ];
@@ -625,11 +623,11 @@ in
               echo "Warning: WiFi interface not found"
             fi
             
-            # Check Mali GPU
-            if [ -e /dev/mali0 ]; then
-              echo "Mali GPU device found"
+            # Check Panfrost GPU  
+            if [ -e /dev/dri/card0 ]; then
+              echo "Panfrost GPU device found at /dev/dri/card0"
             else
-              echo "Info: Mali GPU device not available (using software rendering)"
+              echo "Info: GPU device not available (using software rendering)"
             fi
             
             # Create runtime directories

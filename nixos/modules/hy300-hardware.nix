@@ -153,7 +153,7 @@ in
       kernelParams = [
         # Memory configuration
         "cma=${cfg.platformConfig.memoryLayout.cmaSize}"
-        "mali.mali_shared_mem_size=${cfg.platformConfig.memoryLayout.maliSharedSize}"
+        # Panfrost uses CMA for GPU memory allocation
         
         # Clock configuration
         "sunxi-cpufreq.min_freq=${cfg.platformConfig.clockConfiguration.cpuFreqMin}"
@@ -186,8 +186,8 @@ in
         (optional cfg.drivers.keystoneMotor "hy300-keystone-motor")
         (optional cfg.drivers.hdmiInput "sunxi-tvcap-enhanced")
         
-        # Mali GPU modules
-        [ "mali_kbase" "mali_csffw" ]
+        # Mali GPU modules (Panfrost open source driver)
+        [ "panfrost" ]
         
         # Video and media modules
         [ "videodev" "v4l2-common" "videobuf2-core" ]
@@ -410,7 +410,7 @@ in
     # Environment variables for hardware access
     environment.variables = {
       # Mali GPU configuration
-      MALI_SHARED_MEM_SIZE = cfg.platformConfig.memoryLayout.maliSharedSize;
+      # Panfrost uses CMA - no explicit Mali shared memory needed
       
       # Video capture configuration
       V4L2_DEVICE = "/dev/video0";

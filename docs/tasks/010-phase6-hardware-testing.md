@@ -3,7 +3,8 @@
 ## Task Overview
 **Objective:** Begin hardware-based testing and validation of U-Boot bootloader, mainline device tree, and systematic driver enablement using safe FEL mode recovery procedures.
 
-**Status:** in_progress  
+**Status:** blocked
+**Blocker:** Physical hardware access required (serial console, FEL mode, device access)  
 **Priority:** high  
 **Phase:** VI (Hardware Testing and Validation)  
 **Dependencies:** Phase V completion (Task 009)

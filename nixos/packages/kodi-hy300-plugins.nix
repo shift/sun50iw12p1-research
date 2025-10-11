@@ -1486,7 +1486,7 @@ EOF
   </cache>
   <loglevel hide="false">1</loglevel>
   <cputempcommand>sensors | grep "Core 0" | cut -c17-18</cputempcommand>
-  <gputempcommand>nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits</gputempcommand>
+  <gputempcommand>cat /sys/class/thermal/thermal_zone0/temp | awk '{print $1/1000}'</gputempcommand>
 </advancedsettings>
 EOF
       
@@ -1559,7 +1559,7 @@ export KODI_HOME="/home/projector/.kodi"
 export KODI_USERDATA="$KODI_HOME/userdata"
 
 # Ensure hardware acceleration is available
-export LIBVA_DRIVER_NAME=radeonsi
+export LIBVA_DRIVER_NAME=panfrost
 export VDPAU_DRIVER=radeonsi
 
 # Set audio output for projector
