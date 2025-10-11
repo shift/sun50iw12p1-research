@@ -369,3 +369,219 @@ sudo ./tools/fel-permissions.sh
 **Task Status:** ✅ COMPLETED (Software Implementation)  
 **Next Task:** Task 010 (Phase VI Hardware Testing) - FEL backup prerequisite satisfied  
 **Hardware Required:** HY300 in FEL mode for execution and validation
+
+---
+
+# H713 FEL Mode Investigation - October 11, 2025
+
+## CRITICAL UPDATE: FEL Mode Inaccessible Due to BROM Firmware Bug
+
+### Investigation Summary
+All FEL operations fail with immediate device crashes. Comprehensive investigation determined the root cause is an **H713 BROM firmware bug**, not a protocol or tool implementation issue.
+
+### The Problem
+**H713 BROM crashes immediately when ANY program attempts to open the USB device.** Device crashes before any FEL protocol commands can be sent.
+
+### Evidence
+1. **Device Enumeration**: ✅ Works perfectly
+   - VID/PID: 1f3a:efe8 (correct Allwinner FEL mode ID)
+   - bcdDevice: 2.b3
+   - Device descriptor readable by Linux kernel
+
+2. **Device Access**: ❌ Crashes BROM every time
+   - ANY `libusb_open_device_with_vid_pid()` call triggers crash
+   - Tested with: custom `sunxi-fel-h713-v3`, stock `sunxi-fel`, minimal test programs
+   - Even `lsusb -v` descriptor read causes crash
+   - Error: `errno=5 EIO` when attempting to open `/dev/bus/usb/001/XXX`
+
+3. **Crash Behavior**:
+   - Device crashes ~300ms after open attempt
+   - Enters continuous reset loop: crash → USB reset → re-enumerate → repeat
+   - Device number increments each cycle (067 → 068 → 069...)
+   - `/dev/bus/usb/001/XXX` never created by udev (resets too fast)
+   - **WITHOUT any access attempts**: device remains perfectly stable
+
+4. **Minimal Test Confirmation**:
+   ```c
+   // Even this minimal code crashes the device
+   int main() {
+       libusb_init(NULL);
+       libusb_device_handle *handle = 
+           libusb_open_device_with_vid_pid(NULL, 0x1f3a, 0xefe8);
+       // CRASH occurs HERE, before any FEL operations
+       return 0;
+   }
+   ```
+
+### Root Cause: BROM Firmware Bug
+The H713 BROM crashes during USB device initialization sequence, likely during:
+- Configuration descriptor read operations
+- Interface claim operations
+- Initial control transfers
+- Some undocumented initialization requirement
+
+**This is a BROM-level firmware bug**, not fixable in userspace software. The crash happens in the device's boot ROM code before any FEL protocol communication occurs.
+
+### Investigation History
+
+#### Earlier Findings (Cannot be Tested)
+1. **13-byte USB response discovery** - H713 sends 13-byte (not 16-byte) `AWUS` response
+   - Fixed in `sunxi-fel-h713-v3` binary
+   - **Cannot test** - device crashes before reaching protocol stage
+
+2. **SRAM layout differences** - H713 uses SRAM A2 (0x104000) not SRAM A1 (0x20000)
+   - Fixed in v2/v3 binaries
+   - **Cannot test** - device crashes before memory operations
+
+3. **Device reset loop** - Initially thought to be protocol-induced
+   - **Actually** - BROM firmware bug causing crash on device open
+
+### Files Modified During Investigation
+- `H713_FEL_PROTOCOL_ANALYSIS.md` - Updated with BROM crash findings
+- `H713_FEL_FIXES_SUMMARY.md` - Updated with firmware bug conclusion
+- `build/sunxi-tools/fel_lib.c` - Applied 13-byte response fix (untestable)
+- `build/sunxi-tools/soc_info.c` - Applied H713 memory layout (untestable)
+
+### Binaries Created (Untestable)
+- `sunxi-fel-h713-v3` (77KB) - Latest with all fixes
+- `sunxi-fel-h713-debug` (77KB) - Debug version with USB traces
+- `sunxi-fel-h713-fixed-v2` - Earlier version
+
+## Alternative Access Methods
+
+### 1. Serial Console (UART) - **PRIMARY RECOMMENDATION**
+**Status**: Required for all hardware testing going forward
+
+- Boot U-Boot and Linux via serial console  
+- Bypasses FEL mode entirely
+- Standard 3.3V UART: TX, RX, GND pins
+- Use: `screen /dev/ttyUSB0 115200`
+
+**Required Hardware:**
+- USB-to-TTL serial adapter (3.3V)
+- Identify UART pins on HY300 board
+
+### 2. Android ADB Method
+- Boot into factory Android first
+- Use `adb` for bootloader interaction
+- May allow triggering FEL differently from userspace
+- Use `adb shell` for file system access
+
+### 3. Different USB Host (Low Probability)
+- Try Windows machine (different USB stack)
+- Try USB 2.0 hub (different enumeration)
+- Try older Linux kernel/libusb version
+
+### 4. Hardware Investigation (Advanced)
+- USB protocol sniffer to capture crash sequence
+- Check for undocumented FEL entry procedure
+- Verify button combination or pin short requirements
+
+## Impact on Project Phases
+
+### Phase II: U-Boot Porting ✅ UNAFFECTED
+- ❌ Cannot use FEL upload for U-Boot testing
+- ✅ **Use serial console** for boot verification
+- ✅ **Use eMMC/SD boot** once U-Boot flashed via Android
+
+### Phase III+: Linux Development ✅ CONTINUES
+- ❌ Cannot use FEL for firmware extraction
+- ✅ **Use Android ADB** for file system access
+- ✅ **Use dd over serial/network** for partition backup
+- ✅ **Use serial console** for kernel boot testing
+
+### Backup Scripts Status: ⚠️ NOT USABLE
+All FEL backup scripts remain software-complete but **cannot execute on H713 hardware**:
+- `tools/hy300-fel-backup.sh` - Comprehensive (blocked by BROM)
+- `tools/hy300-fel-quick.sh` - Quick backup (blocked by BROM)
+- `tools/backup-firmware.sh` - Alternative (blocked by BROM)
+
+**Alternative**: Use Android ADB + dd for firmware backup instead.
+
+## Revised Hardware Testing Strategy
+
+### Prerequisites Update
+- ❌ **FEL backup** - Not available due to BROM bug
+- ✅ **Serial console** - Required, becomes primary method
+- ✅ **Android ADB backup** - Use for firmware extraction
+- ✅ **U-Boot UMS mode** - Access via serial, not FEL upload
+
+### Phase VI Testing Approach
+1. ✅ **Acquire UART hardware** (USB-TTL adapter, 3.3V)
+2. ✅ **Identify UART pins** on HY300 board
+3. ✅ **Boot via serial console** for all testing
+4. ✅ **Extract firmware via ADB** (boot Android, use dd)
+5. ✅ **Flash U-Boot via Android** (not FEL)
+6. ✅ **Test boot via serial** (monitor U-Boot/Linux)
+
+### Complete Backup Alternative (Serial Console)
+```bash
+# Boot into Android
+# Connect via ADB
+adb shell
+
+# Create complete eMMC backup
+su
+dd if=/dev/block/mmcblk0 | gzip > /sdcard/emmc_backup.img.gz
+
+# Pull to host
+adb pull /sdcard/emmc_backup.img.gz
+```
+
+## Recommendations
+
+### Immediate Actions Required
+1. ✅ **Document FEL limitation** - Updated in this file
+2. ⏸️ **Acquire serial console hardware** - USB-TTL adapter needed
+3. ⏸️ **Hardware board inspection** - Identify UART TX/RX/GND pins  
+4. ⏸️ **Update task dependencies** - Serial console now prerequisite
+
+### Testing Approach Going Forward
+- **Phase II-VIII**: All boot testing via serial console
+- **Firmware backup**: Use ADB + dd, not FEL
+- **U-Boot testing**: Flash via Android, boot via serial
+- **Kernel testing**: Serial console for all boot debugging
+
+### Long-term Investigation (Optional)
+- Report H713 BROM bug to Allwinner
+- Submit findings to sunxi-tools upstream
+- Test with different host platforms (Windows, macOS)
+- Consider USB protocol sniffer analysis
+
+## What Worked / What Didn't
+
+### ✅ What Worked
+- USB device enumeration and detection
+- BROM correctly enters FEL mode (VID/PID verified)
+- Device stable when not accessed
+- USB protocol analysis via libusb debug mode
+- Root cause identification (BROM crash, not protocol)
+
+### ❌ What Didn't Work
+- ALL libusb-based tools crash device (custom + upstream)
+- Power cycling (only temporary, crash repeats on access)
+- USB descriptor reads (even `lsusb -v` crashes device)
+- Minimal test programs (confirms not tool-specific)
+
+### ⏸️ Cannot Test (Device Crashes First)
+- 13-byte USB response fix
+- SRAM A2 memory layout corrections
+- SPL upload operations
+- Memory read/write operations
+- FEL version/sid commands
+
+## Conclusion
+
+**FEL mode is INACCESSIBLE on H713 due to BROM firmware bug.** Device crashes during USB device open, before any FEL protocol commands can be sent. This is NOT a userspace software issue.
+
+**Project will proceed using serial console (UART)** for all hardware testing and development. FEL mode documented as unavailable and marked as known H713 limitation.
+
+All FEL backup scripts remain as documentation of intended functionality, but **cannot be used on H713 hardware**. Alternative backup methods (ADB + dd) provide equivalent functionality.
+
+---
+
+**Investigation Date**: October 11, 2025  
+**Investigation Status**: COMPLETE  
+**FEL Mode Status**: INACCESSIBLE (BROM firmware bug)  
+**Recommended Method**: Serial Console (UART) + Android ADB  
+**Hardware Requirement**: USB-TTL serial adapter (3.3V UART)

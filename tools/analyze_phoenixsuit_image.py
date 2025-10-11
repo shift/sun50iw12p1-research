@@ -25,8 +25,8 @@ class PhoenixSuitImage:
     
     # Image header constants (from imgdec_fun.lua)
     IMAGE_HEAD_SIZE = 96
-    IMAGE_ITEM_SIZE_V1 = 32
-    IMAGE_ITEM_SIZE_V2 = 64
+    IMAGE_ITEM_SIZE_V1 = 1024  # Corrected from reverse engineering actual image
+    IMAGE_ITEM_SIZE_V2 = 1024  # PhoenixSuit uses 1024-byte items
     
     # Magic signatures
     MAGIC_SIGNATURES = [
@@ -88,9 +88,9 @@ class PhoenixSuitImage:
             self.header['hardware_id'] = struct.unpack('<H', data[70:72])[0]
             self.header['firmware_id'] = struct.unpack('<H', data[72:74])[0]
             self.header['item_attr'] = struct.unpack('<H', data[74:76])[0]
-            self.header['item_size'] = struct.unpack('<H', data[76:78])[0]
-            self.header['item_count'] = struct.unpack('<H', data[78:80])[0]
-            self.header['item_offset'] = struct.unpack('<I', data[80:84])[0]
+            self.header['item_size'] = struct.unpack('<H', data[56:58])[0]  # Corrected offset
+            self.header['item_count'] = struct.unpack('<H', data[60:62])[0]  # Corrected offset
+            self.header['item_offset'] = struct.unpack('<I', data[64:68])[0]  # Corrected offset
             self.header['image_attr'] = data[84]
             self.header['append_size'] = data[85]
             self.header['append_offset_lo'] = data[86]
@@ -153,6 +153,7 @@ class PhoenixSuitImage:
             item['size'] = struct.unpack('<I', data[4:8])[0]
             item['main_type'] = data[8:24].decode('ascii', errors='ignore').rstrip('\x00')
             item['sub_type'] = data[24:32].decode('ascii', errors='ignore').rstrip('\x00')
+            item['filename'] = data[32:96].decode('ascii', errors='ignore').rstrip('\x00').split('\x00')[0]
             item['attr'] = struct.unpack('<I', data[32:36])[0]
             item['data_len_lo'] = struct.unpack('<I', data[36:40])[0]
             item['file_len_lo'] = struct.unpack('<I', data[40:44])[0]
@@ -213,10 +214,10 @@ class PhoenixSuitImage:
             print("-" * 70)
             for i, item in enumerate(self.items):
                 main_type = item.get('main_type', '')
-                sub_type = item.get('sub_type', '')
+                filename = item.get('filename', item.get('sub_type', ''))
                 offset = item.get('offset', 0)
                 size = item.get('data_length', 0)
-                print(f"{i:<4} {main_type:<16} {sub_type:<12} 0x{offset:<10x} {size:>10,} B")
+                print(f"{i:<4} {main_type:<16} {filename:<20} 0x{offset:<10x} {size:>10,} B")
         print("=" * 70)
         
     def extract_item(self, item_name, output_path):

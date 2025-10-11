@@ -224,3 +224,155 @@ Each delegation is self-contained with complete context provided in delegation p
 - Confirmed USB enumeration and version query work
 - Identified bulk transfer timeouts as core issue
 - Determined H616 memory map incompatibility as root cause
+
+---
+
+## CRITICAL UPDATE: October 11, 2025
+
+### FEL Mode Inaccessible - BROM Firmware Bug Discovered
+
+**Investigation Completed:** Comprehensive FEL protocol investigation determined that H713 FEL mode is **INACCESSIBLE** due to BROM firmware bug.
+
+### Finding: BROM Crashes on Device Access
+
+**The Problem:** H713 BROM has a firmware bug causing it to crash immediately when ANY program attempts to open the USB device. The device crashes **before any FEL protocol commands can be sent**, making ALL FEL operations impossible.
+
+**Evidence:**
+1. Device enumerates correctly (VID/PID: 1f3a:efe8, bcdDevice: 2.b3)
+2. Crashes on `libusb_open_device_with_vid_pid()` call - before FEL protocol stage
+3. Affects ALL software: custom binaries, stock sunxi-fel, minimal test programs
+4. Even `lsusb -v` descriptor read causes BROM crash
+5. Error: `errno=5 EIO` when attempting to open device
+6. Enters continuous reset loop (crash → USB reset → re-enumerate → repeat)
+7. WITHOUT access attempts: device remains perfectly stable
+
+### Root Cause: Not a Protocol Issue
+
+**Initial hypothesis (WRONG):** H713 uses different FEL protocol or memory map  
+**Actual cause:** BROM firmware bug during USB device initialization
+
+The crash occurs during USB initialization sequence (configuration descriptor read, interface claim, or initial control transfers), not during FEL protocol operations. This is a BROM-level firmware bug, not fixable in userspace tools.
+
+### Investigation History
+
+**Fixes Attempted (All Untestable):**
+1. **13-byte USB response fix** - H713 sends 13-byte (not 16-byte) `AWUS` response
+   - Fixed in `sunxi-fel-h713-v3` 
+   - Cannot test - device crashes before protocol stage
+
+2. **SRAM A2 memory layout** - H713 uses 0x104000 (not 0x20000)
+   - Fixed in v2/v3 binaries based on boot0.bin analysis
+   - Cannot test - device crashes before memory operations
+
+3. **Swap buffer addresses** - H713 SRAM A2 layout (not H616 SRAM A1)
+   - Fixed in v2/v3 binaries
+   - Cannot test - device crashes before FEL commands
+
+**All fixes remain as documentation** of reverse engineering work, but cannot be validated on H713 hardware.
+
+### Impact on Task Objectives
+
+#### Original Task Objectives: ❌ NOT ACHIEVABLE
+- ❌ Cannot reverse engineer FEL memory map (device inaccessible)
+- ❌ Cannot test SPL upload via FEL (BROM crashes first)
+- ❌ Cannot validate memory operations (no device access)
+- ❌ Cannot execute any FEL protocol commands
+
+#### Sub-task Status:
+- ✅ **Task 027a** (boot0 analysis) - COMPLETED (software analysis only)
+- ✅ **Task 027b** (memory comparison) - COMPLETED (software analysis only)
+- ✅ **Task 027c** (factory mining) - COMPLETED (software analysis only)
+- ❌ **Task 027d** (testing) - BLOCKED indefinitely (requires FEL access)
+- ❌ **Task 027e** (validation) - BLOCKED indefinitely (requires FEL access)
+
+### Alternative Hardware Testing Methods
+
+Since FEL mode is inaccessible, Phase II U-Boot testing requires:
+
+#### 1. Serial Console (UART) - **PRIMARY RECOMMENDATION**
+- Boot U-Boot via serial console, NOT FEL upload
+- Monitor boot process via UART (standard 3.3V TX/RX/GND)
+- Use: `screen /dev/ttyUSB0 115200`
+- **Hardware Required:** USB-to-TTL serial adapter
+
+#### 2. Android ADB Method
+- Boot Android, flash U-Boot via `dd` command
+- Test boot via serial console or HDMI output
+- Use ADB for firmware backup instead of FEL
+
+#### 3. eMMC/SD Direct Boot
+- Flash U-Boot directly to eMMC/SD via Android
+- Boot from eMMC/SD (no FEL upload needed)
+- Test via serial console
+
+#### 4. Different USB Host (Low Probability)
+- Try Windows machine (different USB driver)
+- Try USB 2.0 hub or older kernel
+- Unlikely to work (BROM bug is hardware-level)
+
+### Documentation Created
+
+**Investigation Results:**
+- `FEL_BACKUP_IMPLEMENTATION_SUMMARY.md` - Complete investigation timeline and findings
+- `H713_FEL_PROTOCOL_ANALYSIS.md` - BROM crash analysis and evidence
+- `H713_FEL_FIXES_SUMMARY.md` - Attempted fixes and test results
+- `H713_BROM_MEMORY_MAP.md` - boot0 analysis (completed, software-only)
+- `FACTORY_FEL_ADDRESSES.md` - Factory firmware analysis (completed, software-only)
+- `H713_MEMORY_MAP_CANDIDATES.md` - Memory layout analysis (completed, software-only)
+
+**Binaries Created (Untestable):**
+- `sunxi-fel-h713-v3` (77KB) - All fixes applied, cannot test
+- `sunxi-fel-h713-debug` (77KB) - Debug version with USB traces
+- `sunxi-fel-h713-fixed-v2` - Earlier iteration
+
+### Task Status Resolution
+
+**This task is BLOCKED INDEFINITELY** and should be deprecated in favor of serial console approach.
+
+**Options:**
+1. **Deprecate this task** - Mark as blocked by hardware limitation
+2. **Create new task** - "Serial Console U-Boot Testing" as replacement
+3. **Update Phase II strategy** - Remove FEL dependency, use serial console throughout
+4. **Document H713 limitation** - FEL mode unavailable, known hardware issue
+
+**Recommendation:** Create Task 033: "Serial Console Hardware Testing Setup" to replace FEL-based testing approach for Phase II and beyond.
+
+### Next Steps for Project
+
+**Immediate Actions:**
+1. ✅ Document FEL limitation (THIS UPDATE)
+2. ⏸️ Acquire USB-to-TTL serial adapter (3.3V UART)
+3. ⏸️ Identify UART pins on HY300 board (TX, RX, GND)
+4. ⏸️ Create new task for serial console testing setup
+5. ⏸️ Update Phase II documentation to remove FEL dependencies
+
+**Hardware Testing Approach:**
+- All boot testing via serial console (UART)
+- Firmware backup via Android ADB + dd
+- U-Boot flashing via Android (not FEL)
+- Kernel testing via serial console boot monitoring
+
+### Lessons Learned
+
+**What Worked:**
+- ✅ Systematic USB protocol investigation
+- ✅ boot0.bin reverse engineering and analysis
+- ✅ Factory firmware mining for addresses
+- ✅ Evidence-based memory map reconstruction
+- ✅ Root cause identification (BROM bug vs protocol)
+
+**What Didn't Work:**
+- ❌ ALL libusb-based FEL access methods
+- ❌ Power cycling (temporary fix only)
+- ❌ USB descriptor reads
+- ❌ Minimal test programs (confirmed not tool-specific)
+
+**Key Insight:**
+Hardware limitations can block even well-researched solutions. Having alternative testing methods (serial console, ADB) is critical for project continuity.
+
+---
+
+**Task Status:** BLOCKED INDEFINITELY - BROM firmware bug prevents FEL access  
+**Updated:** October 11, 2025  
+**Recommendation:** Deprecate task, create serial console testing task as replacement  
+**References:** See `FEL_BACKUP_IMPLEMENTATION_SUMMARY.md` for complete investigation

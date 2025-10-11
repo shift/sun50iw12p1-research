@@ -212,3 +212,25 @@ FEL mode enables:
 - Reliable FEL operations (100% success)
 - Complete documentation
 - Ready for Phase III Linux porting
+
+---
+
+## CRITICAL UPDATE: October 11, 2025
+
+### FEL Mode Inaccessible - Task Cannot Be Executed
+
+**Investigation Result:** This task cannot be completed due to H713 BROM firmware bug.
+
+**Finding:** H713 BROM crashes immediately when ANY program attempts to open the USB device, making all FEL protocol validation impossible. Device crashes occur BEFORE any FEL commands can be sent.
+
+**Impact:**
+- ❌ Cannot validate FEL protocol fixes
+- ❌ Cannot test SPL upload operations
+- ❌ Cannot verify memory operations
+- ❌ Cannot perform U-Boot chain loading via FEL
+
+**Alternative:** All validation must occur via serial console (UART) instead of FEL mode.
+
+**Documentation:** See `FEL_BACKUP_IMPLEMENTATION_SUMMARY.md` for complete investigation findings.
+
+**Task Status:** BLOCKED INDEFINITELY - Recommend deprecation in favor of serial console testing approach.

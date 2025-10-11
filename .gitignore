@@ -128,3 +128,19 @@ firmware_backup_*/
 
 # Sunxi-tools source (use upstream with patch)
 sunxi-tools-source/
+
+# PhoenixSuit binaries and tools
+ps/
+*.zip
+sunxi-fel-h713*
+fel-h713
+run-fel-h713
+license.jwt
+
+# U-Boot binaries
+*.bin
+spl-only.bin
+u-boot-sunxi-with-spl*.bin
+
+# udev rules (system-specific)
+90-sunxi-fel.rules

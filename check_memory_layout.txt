@@ -1,0 +1,25 @@
+H713 Memory Layout Check:
+
+SPL Region:
+  Start: 0x104000 (SPL load address)
+  Size:  0xa000 (40KB from eGON header)
+  End:   0x10e000
+
+Scratch Region:
+  Start: 0x121000
+  Size:  0x1000 (4KB)
+  End:   0x122000
+
+Thunk Region:
+  Start: 0x123a00
+  Size:  0x200 (512 bytes)
+  End:   0x123c00
+
+Swap Buffer buf2:
+  Address: 0x52a00  ← PROBLEM: This is in SRAM A1/C (0x20000-0x53fff)
+  
+ISSUE: buf2 at 0x52a00 conflicts with old H616 memory layout!
+H713 needs buf2 in SRAM A2 range (0x100000-0x120000)
+
+Proposed Fix:
+  buf2 should be: 0x11e000 (safely below scratch at 0x121000)

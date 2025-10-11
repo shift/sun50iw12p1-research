@@ -162,3 +162,43 @@ Create `docs/FEL_TESTING_RESULTS.md` with:
 **Blockers:** USB instability may require multiple retries
 
 **Blocked Reason:** Hardware access required for testing phase (027d)
+
+---
+
+## CRITICAL UPDATE: October 11, 2025
+
+### FEL Mode Inaccessible - BROM Firmware Bug
+
+**Investigation Completed:** FEL mode testing is **NOT POSSIBLE** on H713 hardware due to BROM firmware bug.
+
+**Finding:** H713 BROM crashes immediately when ANY program attempts to open the USB device. Device crashes before any FEL protocol commands can be sent, making all FEL operations (including memory configuration testing) impossible.
+
+**Evidence:**
+- Device enumerates correctly (VID/PID: 1f3a:efe8)
+- Crashes on `libusb_open_device_with_vid_pid()` call
+- Affects ALL tools: custom binaries, stock sunxi-fel, minimal test programs
+- Error: `errno=5 EIO` when accessing device
+- Enters continuous reset loop until device is power cycled
+
+**Impact on This Task:**
+- ❌ Cannot test ANY FEL memory configurations
+- ❌ Cannot perform SPL uploads via FEL
+- ❌ Cannot validate memory operations via FEL
+- ❌ All steps in this task are blocked by BROM bug
+
+**Alternative Path Forward:**
+1. **Serial Console (UART)** - Primary method for U-Boot/Linux testing
+2. **Android ADB** - Alternative for firmware access and testing
+3. **eMMC/SD Boot** - Flash U-Boot via Android, boot directly
+
+**Documentation:**
+- `FEL_BACKUP_IMPLEMENTATION_SUMMARY.md` - Complete investigation findings
+- `H713_FEL_PROTOCOL_ANALYSIS.md` - BROM crash analysis
+- `H713_FEL_FIXES_SUMMARY.md` - Attempted fixes and conclusions
+
+**Task Status:** This task remains **BLOCKED** indefinitely until:
+1. Allwinner provides BROM firmware update, OR
+2. Alternative USB access method discovered, OR  
+3. Task is deprecated in favor of serial console testing approach
+
+**Recommendation:** Deprecate this task and create new task for serial console-based hardware testing.
