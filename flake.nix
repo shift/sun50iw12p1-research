@@ -555,7 +555,7 @@ EOF
              let
                 # HY300 Keystone Service embedded package
                 hy300-keystone-service = pkgs.writeScriptBin "hy300-keystone" ''
-                   #!/usr/bin/env python3
+                   #!${pkgs.python3}/bin/python3
                    """
                    HY300 Keystone Correction Service
                    Simple implementation that handles keystone correction and motor control.
@@ -700,7 +700,7 @@ EOF
 
                 # HY300 WiFi Service embedded package  
                 hy300-wifi-service = pkgs.writeScriptBin "hy300-wifi" ''
-                   #!/usr/bin/env python3
+                   #!${pkgs.python3}/bin/python3
                    """
                    HY300 WiFi Management Service
                    Simple WiFi management using NetworkManager
@@ -891,6 +891,9 @@ EOF
                 isNormalUser = true;
                 password = "test123";
                 extraGroups = [ "wheel" "audio" "video" ];
+                openssh.authorizedKeys.keys = [
+                  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQD0SbNef36C1wG4GLPoa4FwZ+njqiPk4XoG3GHGUjSKA22/5qSpz40s18IRBr5gj3Z7Bzyx5YDkzMMdKn/44OXI3q5qrVzKLhU5eHTlArNa4HJQxP441zL6A1TM/jMYhdUS7UADXAt8IltQGydP8ZPmBJuccx6WuO7p35/hSiPTom6HaDk5aZxlf8zWsgktuJVnL383vLJW7DzzxUE/KmcDt+A8TTc8ClFvXVD+34DMsg06MnlzEr8CxHOUIuHhIXvyY9bpi0mjfrRfQGSc4ay8tHfhVvWRKCwgHfzqmKDJk2oiSe9KozuTsog1S0oXN3kkBdKkR4v5717UUqRaWtqgs74rXI0lcgObgpn8ZpVC6W7YdSO0U4nPpqEY/4vIGIHstju1CyHsLpb1s7IKp3IyhRZ9242ov+ggo+n69Shy0eOZsCGAtKKA2lPaftzi3hBUXKEFeTvA3MaT4Iislgu3NGj+Gyh6rGbLV7a+xOWWOpwVxdks8cnchm8nuiNach8= shift@x1y"
+                ];
               };
               
               services.getty.autologinUser = "hy300";
