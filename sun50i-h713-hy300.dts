@@ -553,6 +553,41 @@
 		};
 
 		/*
+		 * Internal Display Panel Configuration
+		 * Native Resolution: 1280x720 (validated from Android tvpq.db)
+		 * HDMI input at 1080p is downscaled by MIPS co-processor
+		 */
+		panel: panel-hy300 {
+			compatible = "hy300,internal-panel";
+			status = "okay";
+
+			/* Native panel resolution (NOT 1080p as initially assumed) */
+			width-mm = <160>;
+			height-mm = <90>;
+			hactive = <1280>;
+			vactive = <720>;
+
+			/* Factory calibration from tvpq.db (standard mode, tvin=8, mode=1) */
+			brightness = <50>;      /* 0x32 */
+			contrast = <50>;        /* 0x32 */
+			saturation = <50>;      /* 0x32 */
+			hue = <50>;             /* 0x32 */
+			sharpness = <100>;      /* 0x64 */
+			tnr = <8>;              /* Temporal noise reduction */
+			snr = <8>;              /* Spatial noise reduction */
+			backlight-level = <29>; /* 0x1d - default backlight */
+
+			/* Color temperature and processing */
+			colortemperature = <8>;
+			dynamic-backlight = <3>;
+
+			/* PWM configuration from Android kernel analysis */
+			pwms = <&pwm 0 833 0>,      /* LED PWM: 1.2 MHz (833ns period) */
+			       <&pwm 5 25000 0>;    /* Backlight PWM: 40 kHz (25µs period) */
+			pwm-names = "led", "backlight";
+		};
+
+		/*
 		 * RTC and Power Management IC
 		 * H6-compatible RTC
 		 */
@@ -669,8 +704,13 @@
 			
 			/* Clock configuration - TV capture specific clocks */
 			clocks = <&ccu 134>,  /* CLK_BUS_DISP */
+		/*
+		 * PWM Controller
+		 * Channel 0: LED control at 1.2 MHz (833ns period)
+		 * Channel 5: Backlight control at 40 kHz (25µs period)
+		 * See panel-hy300 node for calibration values
+		 */
 				 <&ccu 130>,  /* CLK_BUS_TVCAP */ 
-				 <&ccu 123>,  /* CLK_BUS_DEMOD */
 				 <&ccu 124>,  /* CLK_CAP_300M */
 				 <&ccu 125>,  /* CLK_VINCAP_DMA */
 				 <&ccu 127>,  /* CLK_HDMI_AUDIO_BUS */
