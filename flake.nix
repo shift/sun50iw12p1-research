@@ -870,6 +870,20 @@ EOF
                   memorySize = 2048;
                   graphics = true;
                   diskSize = 8192;
+                  cores = 2;
+                  
+                  # Port forwarding for VM access
+                  forwardPorts = [
+                    { from = "host"; host.port = 2222; guest.port = 22; }    # SSH
+                    { from = "host"; host.port = 8888; guest.port = 8080; }  # Kodi web interface
+                    { from = "host"; host.port = 9090; guest.port = 80; }    # HTTP/nginx
+                  ];
+                  
+                  # Additional QEMU options
+                  qemu.options = [
+                    "-vga virtio"
+                    "-display gtk,gl=on"
+                  ];
                 };
               };
               
@@ -882,7 +896,7 @@ EOF
               services.getty.autologinUser = "hy300";
               
                 environment.systemPackages = with pkgs; [
-                 kodi
+                 # kodi  # Temporarily disabled due to p8-platform CMake build failure
                  firefox
                  htop
                  curl
@@ -895,19 +909,19 @@ EOF
                  hy300-wifi-service
                ];
               
-              # Simple Kodi systemd service
-              systemd.services.kodi = {
-                description = "Kodi Media Center";
-                after = [ "graphical-session.target" ];
-                wantedBy = [ "multi-user.target" ];
-                serviceConfig = {
-                  Type = "simple";
-                  User = "hy300";
-                  ExecStart = "${pkgs.kodi}/bin/kodi --standalone";
-                  Restart = "always";
-                  RestartSec = 5;
-                };
-              };
+              # Kodi systemd service - temporarily disabled due to p8-platform build failure
+              # systemd.services.kodi = {
+              #   description = "Kodi Media Center";
+              #   after = [ "graphical-session.target" ];
+              #   wantedBy = [ "multi-user.target" ];
+              #   serviceConfig = {
+              #     Type = "simple";
+              #     User = "hy300";
+              #     ExecStart = "${pkgs.kodi}/bin/kodi --standalone";
+              #     Restart = "always";
+              #     RestartSec = 5;
+              #   };
+              # };
               
                # HY300 services in simulation mode
                systemd.services.hy300-keystone = {
@@ -1014,9 +1028,18 @@ EOF
                   chown hy300:users /home/hy300/.kodi/userdata/keymaps/hy300-remote.xml
                 '';
                 
-                # IR kernel modules for VM simulation
-                boot.kernelModules = [ "lirc_dev" "ir-lirc-codec" "ir-nec-decoder" ];
-              
+               # IR kernel modules for VM simulation
+               boot.kernelModules = [ "lirc_dev" "ir-lirc-codec" "ir-nec-decoder" ];
+             
+              # Enable OpenSSH for remote access
+              services.openssh = {
+                enable = true;
+                settings = {
+                  PasswordAuthentication = true;
+                  PermitRootLogin = "no";
+                };
+              };
+
                services.xserver = {
                  enable = true;
                  displayManager.lightdm.enable = true;
