@@ -1,6 +1,6 @@
 # Task 027: H713 FEL Memory Map Reverse Engineering
 
-**Status:** pending  
+**Status:** blocked  
 **Priority:** high  
 **Phase:** II - U-Boot Porting  
 **Assigned:** AI Agent  

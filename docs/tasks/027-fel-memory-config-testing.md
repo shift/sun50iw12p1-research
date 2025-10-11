@@ -1,6 +1,6 @@
 # Task 027d: FEL Memory Configuration Testing
 
-**Status:** pending  
+**Status:** blocked  
 **Priority:** high  
 **Phase:** II - U-Boot Porting  
 **Parent Task:** 027 - H713 FEL Memory Map Reverse Engineering  
@@ -8,6 +8,7 @@
 **Created:** 2025-10-11  
 **Context:** ai/contexts/h713-fel-reverse-engineering.md  
 **Hardware Required:** HY300 device in FEL mode via USB
+**Blocker:** No hardware access - requires physical HY300 device
 
 ## Objective
 
@@ -159,3 +160,5 @@ Create `docs/FEL_TESTING_RESULTS.md` with:
 **Time:** 2-3 hours (depends on number of candidates)  
 **Risk:** Low (FEL mode non-destructive)  
 **Blockers:** USB instability may require multiple retries
+
+**Blocked Reason:** Hardware access required for testing phase (027d)
