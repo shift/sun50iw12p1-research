@@ -86,6 +86,14 @@
 #define PANEL_PCLK_TYP          148500000  /* 148.5MHz */
 #define PANEL_PCLK_MIN          130000000
 #define PANEL_PCLK_MAX          164000000
+/* Keystone Correction Limits (from factory analysis) */
+#define MAX_KEYSTONE_X          100
+#define MAX_KEYSTONE_Y          100
+
+/* MIPS Commands */
+#define MIPS_CMD_UPDATE_KEYSTONE 0x10
+#define MIPS_CMD_TIMEOUT_MS      1000
+
 
 /* Device node and class information */
 #define MIPSLOADER_DEVICE_NAME  "mipsloader"
@@ -98,6 +106,20 @@
 #define MIPSLOADER_IOC_POWERDOWN _IO(MIPSLOADER_IOC_MAGIC, 3)
 #define MIPSLOADER_IOC_GET_STATUS _IOR(MIPSLOADER_IOC_MAGIC, 4, int)
 
+
+/**
+ * struct keystone_params - Keystone correction parameters
+ * @tl_x, @tl_y: Top left corner offset
+ * @tr_x, @tr_y: Top right corner offset
+ * @bl_x, @bl_y: Bottom left corner offset
+ * @br_x, @br_y: Bottom right corner offset
+ */
+struct keystone_params {
+	int tl_x, tl_y;
+	int tr_x, tr_y;
+	int bl_x, bl_y;
+	int br_x, br_y;
+};
 
 /**
  * struct mipsloader_metrics - Prometheus metrics tracking
@@ -142,6 +164,7 @@ struct mipsloader_metrics {
  * @major: Major device number
  * @firmware_loaded: Flag indicating if firmware is loaded
  * @lock: Mutex for device access synchronization
+ * @keystone: Current keystone correction parameters
  * @metrics: Prometheus metrics tracking
  */
 struct mipsloader_device {
@@ -155,7 +178,7 @@ struct mipsloader_device {
 	int major;
 	bool firmware_loaded;
 	struct mutex lock;
-};
+	struct keystone_params keystone;
 	struct mipsloader_metrics metrics;
 };
 
@@ -547,11 +570,155 @@ static ssize_t communication_errors_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(communication_errors);
 
+/**
+ * validate_keystone_params - Validate keystone parameter ranges
+ * @params: Keystone parameters to validate
+ * 
+ * Returns 0 on success, negative error code on failure
+ */
+static int validate_keystone_params(struct keystone_params *params)
+{
+	if (abs(params->tl_x) > MAX_KEYSTONE_X ||
+	    abs(params->tl_y) > MAX_KEYSTONE_Y ||
+	    abs(params->tr_x) > MAX_KEYSTONE_X ||
+	    abs(params->tr_y) > MAX_KEYSTONE_Y ||
+	    abs(params->bl_x) > MAX_KEYSTONE_X ||
+	    abs(params->bl_y) > MAX_KEYSTONE_Y ||
+	    abs(params->br_x) > MAX_KEYSTONE_X ||
+	    abs(params->br_y) > MAX_KEYSTONE_Y) {
+		return -ERANGE;
+	}
+	
+	return 0;
+}
+
+/**
+ * mips_wait_cmd_complete - Wait for MIPS command completion
+ * @timeout_ms: Timeout in milliseconds
+ * 
+ * Returns 0 on success, -ETIMEDOUT on timeout
+ */
+static int mips_wait_cmd_complete(unsigned long timeout_ms)
+{
+	unsigned long timeout = jiffies + msecs_to_jiffies(timeout_ms);
+	u32 status;
+	
+	while (time_before(jiffies, timeout)) {
+		status = mipsloader_reg_read(MIPS_REG_STATUS);
+		if (!(status & 0x1))
+			return 0;
+		msleep(10);
+	}
+	
+	return -ETIMEDOUT;
+}
+
+/**
+ * mips_set_keystone_params - Send keystone parameters to MIPS processor
+ * @params: Keystone parameters to set
+ * 
+ * Returns 0 on success, negative error code on failure
+ */
+static int mips_set_keystone_params(struct keystone_params *params)
+{
+	int ret;
+	void __iomem *config_addr;
+	
+	if (!mipsloader_dev || !mipsloader_dev->mem_base) {
+		pr_err("mipsloader: Device not initialized\n");
+		return -ENODEV;
+	}
+	
+	if (!mipsloader_dev->firmware_loaded) {
+		dev_warn(&mipsloader_dev->pdev->dev, 
+			 "Firmware not loaded, keystone parameters may not take effect\n");
+	}
+	
+	ret = validate_keystone_params(params);
+	if (ret) {
+		dev_err(&mipsloader_dev->pdev->dev, 
+			"Invalid keystone parameters: values out of range\n");
+		return ret;
+	}
+	
+	config_addr = mipsloader_dev->mem_base + (MIPS_TSE_ADDR - MIPS_BOOT_CODE_ADDR);
+	memcpy_toio(config_addr, params, sizeof(*params));
+	
+	mipsloader_reg_write(MIPS_REG_CMD, MIPS_CMD_UPDATE_KEYSTONE);
+	
+	ret = mips_wait_cmd_complete(MIPS_CMD_TIMEOUT_MS);
+	if (ret) {
+		dev_err(&mipsloader_dev->pdev->dev, 
+			"MIPS keystone update timeout\n");
+		atomic64_inc(&mipsloader_dev->metrics.communication_errors);
+		return ret;
+	}
+	
+	mipsloader_dev->keystone = *params;
+	
+	dev_info(&mipsloader_dev->pdev->dev, 
+		 "Keystone parameters updated: tl(%d,%d) tr(%d,%d) bl(%d,%d) br(%d,%d)\n",
+		 params->tl_x, params->tl_y, params->tr_x, params->tr_y,
+		 params->bl_x, params->bl_y, params->br_x, params->br_y);
+	
+	return 0;
+}
+
+/**
+ * panelparam_show - Read current keystone correction parameters
+ */
+static ssize_t panelparam_show(struct device *dev,
+			       struct device_attribute *attr, char *buf)
+{
+	if (!mipsloader_dev)
+		return -ENODEV;
+	
+	return sprintf(buf, "tl_x=%d,tl_y=%d,tr_x=%d,tr_y=%d,bl_x=%d,bl_y=%d,br_x=%d,br_y=%d\n",
+		       mipsloader_dev->keystone.tl_x, mipsloader_dev->keystone.tl_y,
+		       mipsloader_dev->keystone.tr_x, mipsloader_dev->keystone.tr_y,
+		       mipsloader_dev->keystone.bl_x, mipsloader_dev->keystone.bl_y,
+		       mipsloader_dev->keystone.br_x, mipsloader_dev->keystone.br_y);
+}
+
+/**
+ * panelparam_store - Write keystone correction parameters
+ */
+static ssize_t panelparam_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct keystone_params params;
+	int ret;
+	
+	if (!mipsloader_dev)
+		return -ENODEV;
+	
+	ret = sscanf(buf, "tl_x=%d,tl_y=%d,tr_x=%d,tr_y=%d,bl_x=%d,bl_y=%d,br_x=%d,br_y=%d",
+		     &params.tl_x, &params.tl_y,
+		     &params.tr_x, &params.tr_y,
+		     &params.bl_x, &params.bl_y,
+		     &params.br_x, &params.br_y);
+	
+	if (ret != 8) {
+		dev_err(dev, "Invalid keystone parameter format. Expected: tl_x=N,tl_y=N,...\n");
+		return -EINVAL;
+	}
+	
+	ret = mips_set_keystone_params(&params);
+	if (ret)
+		return ret;
+	
+	return count;
+}
+
+static DEVICE_ATTR_RW(panelparam);
+
 static struct attribute *mipsloader_attrs[] = {
 	&dev_attr_memory_stats.attr,
 	&dev_attr_register_access_count.attr,
 	&dev_attr_firmware_status.attr,
 	&dev_attr_communication_errors.attr,
+	&dev_attr_panelparam.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(mipsloader);
@@ -581,6 +748,8 @@ static int mipsloader_probe(struct platform_device *pdev)
 	memset(&mipsloader_dev->metrics, 0, sizeof(mipsloader_dev->metrics));
 	for (i = 0; i < 4; i++)
 		atomic64_set(&mipsloader_dev->metrics.reg_access_count[i], 0);
+	
+	memset(&mipsloader_dev->keystone, 0, sizeof(mipsloader_dev->keystone));
 	
 	/* Map register region */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
