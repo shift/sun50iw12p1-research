@@ -1,0 +1,223 @@
+!This program cannot be run in DOS mode.
+`.rdata
+@.data
+.reloc
+RPQh% "
+D$8AWUC
+tlKt)h
+=AWUSu
+hAWUSP
+t*PVh4
+HHtpHHtl
+SS@SSPVSS
+t#SSUP
+t$$VSS
+_^][YY
+YYF;5`
+PPPPPPPP
+PPPPPPPP
+t.;t$$t(
+VC20XC00U
+^}%95$
+`h````
+ppxxxx
+(null)
+runtime error 
+TLOSS error
+SING error
+DOMAIN error
+- unable to initialize heap
+- not enough space for lowio initialization
+- not enough space for stdio initialization
+- pure virtual function call
+- not enough space for _onexit/atexit table
+- unable to open console device
+- unexpected heap error
+- unexpected multithread lock error
+- not enough space for thread data
+abnormal program termination
+- not enough space for environment
+- not enough space for arguments
+- floating point not loaded
+Microsoft Visual C++ Runtime Library
+Runtime Error!
+Program: 
+<program name unknown>
+GetLastActivePopup
+GetActiveWindow
+MessageBoxA
+user32.dll
+H:mm:ss
+dddd, MMMM dd, yyyy
+M/d/yy
+December
+November
+October
+September
+August
+February
+January
+Saturday
+Friday
+Thursday
+Wednesday
+Tuesday
+Monday
+Sunday
+SunMonTueWedThuFriSat
+JanFebMarAprMayJunJulAugSepOctNovDec
+OutputDebugStringA
+CreateFileA
+CloseHandle
+DeviceIoControl
+KERNEL32.dll
+GetCommandLineA
+GetVersion
+EnterCriticalSection
+LeaveCriticalSection
+ExitProcess
+TerminateProcess
+GetCurrentProcess
+GetCurrentThreadId
+TlsSetValue
+TlsAlloc
+TlsFree
+SetLastError
+TlsGetValue
+GetLastError
+SetHandleCount
+GetStdHandle
+GetFileType
+GetStartupInfoA
+DeleteCriticalSection
+GetModuleFileNameA
+FreeEnvironmentStringsA
+FreeEnvironmentStringsW
+WideCharToMultiByte
+GetEnvironmentStrings
+GetEnvironmentStringsW
+HeapDestroy
+HeapCreate
+VirtualFree
+HeapFree
+WriteFile
+SetFilePointer
+InterlockedDecrement
+InterlockedIncrement
+HeapAlloc
+InitializeCriticalSection
+GetCPInfo
+GetACP
+GetOEMCP
+VirtualAlloc
+HeapReAlloc
+GetProcAddress
+LoadLibraryA
+SetStdHandle
+FlushFileBuffers
+MultiByteToWideChar
+LCMapStringA
+LCMapStringW
+GetStringTypeA
+GetStringTypeW
+RtlUnwind
+eFex.dll
+GetAuthor
+GetCopyRight
+GetInterface
+GetPlugInName
+GetPlugInType
+GetPlugInVersion
+QueryInterface
+f3e88841-bb99-42a0-aff4-385e1f5c8f3a
+scottyu
+ERROR:%s[%d]
+FUNC:%s:%s
+......
+Fex_Query
+efex_core.cpp
+IOCTL_UDISC_QUERY_INFO
+Fex_Send
+Fex_Send
+Fex_Recv
+Fex_Recv
+ CSWStatus= %x(%x) Magic=%x(%x)
+ Fex_Recv
+ Fex_Recv
+ Fex_Send
+Fex_transmit_receive
+ Fex_Send
+ Fex_transmit_receive 
+get_msg 
+: Fex_transmit_receive 
+get_msg 
+ msg_len%d Data_len%d
+get_msg 
+ fet_run
+: Fex_transmit_receive 
+fel_up
+: Fex_transmit_receive 
+FEX_CMD_fes_trans
+: DOU_INVALID 
+FEX_CMD_fes_trans
+: DOU_UPLOAD 
+FEX_CMD_fes_trans
+: DOU_DOWNLOAD 
+fel_down
+: Fex_transmit_receive 
+ get_cmd_set_ver
+: Fex_transmit_receive 
+ verify_dev: 
+AWUSBFEX
+FEX_CMD
+ verify_dev
+: Fex_transmit_receive 
+ is_ready
+: Fex_transmit_receive 
+Fex_command
+ Fex_transmit_receive 
+4/595>5o5y5~5
+7M7W7\7w7
+7P8Z8_8
+8"9,919I9S9X9
+:9:U:_:d:
+:P;Z;_;
+=*=/=9=S=a=i=o=
+= >;>J>f>
+213R3i3
+8/8>8P8Y8u8
+:!:':.:8:Q:Y:^:j:o:
+;*;0;=;M;S;[;y;
+;,<D<J<t<z<
+<0=:=[=p=
+>1>V>e>t>
+?#?1?>?C?I?
+141i1q1
+3"3,343<3B3J3Y3k3
+4B4V4t4
+6(7@7U7
+9)9/9^:
+;	<K<]<}<
+=!=N=i=y=
+>M>S>m?
+0?0E0f0p0{0
+1$1.181>1
+1(2.2L2]2p2
+4%4,4044484<4@4D4H4
+50575<5@5D5a5
+5*6064686<6
+9)9/9I9N9]9c9s9~9
+: :&:j:
+=#=)=?=F=L=V=\=a=g=w=
+1;1h1|1
+2'373i3s3
+4!4?4\4t4
+6)6<6C6U6]6m6~6
+8%8,8084888<8@8D8H8
+90979<9@9D9a9
+9*:0:4:8:<:
+>F?L?Z?
+40:0H0
+8 8$8(8,8084888<8T:t:
+:@?H?L?P?T?X?\?`?d?h?l?p?t?x?|?
+0 0$000

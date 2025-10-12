@@ -1,0 +1,115 @@
+	DLL Name: KERNEL32.dll
+	vma:     Ordinal  Hint  Member-Name  Bound-To
+	00007000  <none>  01f5  OutputDebugStringA
+	00007004  <none>  0034  CreateFileA
+	00007008  <none>  001b  CloseHandle
+	0000700c  <none>  005c  DeviceIoControl
+	00007010  <none>  00ca  GetCommandLineA
+	00007014  <none>  0174  GetVersion
+	00007018  <none>  0066  EnterCriticalSection
+	0000701c  <none>  01c1  LeaveCriticalSection
+	00007020  <none>  007d  ExitProcess
+	00007024  <none>  029e  TerminateProcess
+	00007028  <none>  00f7  GetCurrentProcess
+	0000702c  <none>  00fa  GetCurrentThreadId
+	00007030  <none>  02a5  TlsSetValue
+	00007034  <none>  02a2  TlsAlloc
+	00007038  <none>  02a3  TlsFree
+	0000703c  <none>  0271  SetLastError
+	00007040  <none>  02a4  TlsGetValue
+	00007044  <none>  011a  GetLastError
+	00007048  <none>  026d  SetHandleCount
+	0000704c  <none>  0152  GetStdHandle
+	00007050  <none>  0115  GetFileType
+	00007054  <none>  0150  GetStartupInfoA
+	00007058  <none>  0055  DeleteCriticalSection
+	0000705c  <none>  0124  GetModuleFileNameA
+	00007060  <none>  00b2  FreeEnvironmentStringsA
+	00007064  <none>  00b3  FreeEnvironmentStringsW
+	00007068  <none>  02d2  WideCharToMultiByte
+	0000706c  <none>  0106  GetEnvironmentStrings
+	00007070  <none>  0108  GetEnvironmentStringsW
+	00007074  <none>  019d  HeapDestroy
+	00007078  <none>  019b  HeapCreate
+	0000707c  <none>  02bf  VirtualFree
+	00007080  <none>  019f  HeapFree
+	00007084  <none>  02df  WriteFile
+	00007088  <none>  026a  SetFilePointer
+	0000708c  <none>  01ad  InterlockedDecrement
+	00007090  <none>  01b0  InterlockedIncrement
+	00007094  <none>  0199  HeapAlloc
+	00007098  <none>  01aa  InitializeCriticalSection
+	0000709c  <none>  00bf  GetCPInfo
+	000070a0  <none>  00b9  GetACP
+	000070a4  <none>  0131  GetOEMCP
+	000070a8  <none>  02bb  VirtualAlloc
+	000070ac  <none>  01a2  HeapReAlloc
+	000070b0  <none>  013e  GetProcAddress
+	000070b4  <none>  01c2  LoadLibraryA
+	000070b8  <none>  027c  SetStdHandle
+	000070bc  <none>  00aa  FlushFileBuffers
+	000070c0  <none>  01e4  MultiByteToWideChar
+	000070c4  <none>  01bf  LCMapStringA
+	000070c8  <none>  01c0  LCMapStringW
+	000070cc  <none>  0153  GetStringTypeA
+	000070d0  <none>  0156  GetStringTypeW
+	000070d4  <none>  022f  RtlUnwind
+
+ 00007674	00000000 00000000 00000000 00000000 00000000
+
+There is an export table in .rdata at 0x10007b30
+
+The Export Tables (interpreted .rdata section contents)
+
+Export Flags 			0
+Time/Date stamp 		4b011f48
+Major/Minor 			0/0
+Name 				00007b9e eFex.dll
+Ordinal Base 			1
+Number in:
+	Export Address Table 		00000007
+	[Name Pointer/Ordinal] Table	00000007
+Table Addresses
+	Export Address Table 		00007b58
+	Name Pointer Table 		00007b74
+	Ordinal Table 			00007b90
+
+Export Address Table -- Ordinal Base 1
+	          Ordinal  Address  Type
+	[   0] +base[   1] 00001120 Export RVA
+	[   1] +base[   2] 00001120 Export RVA
+	[   2] +base[   3] 00001060 Export RVA
+	[   3] +base[   4] 00001100 Export RVA
+	[   4] +base[   5] 000010f0 Export RVA
+	[   5] +base[   6] 00001110 Export RVA
+	[   6] +base[   7] 00001010 Export RVA
+
+[Ordinal/Name Pointer] Table -- Ordinal Base 1
+	          Ordinal   Hint Name
+	[   0] +base[   1]  0000 GetAuthor
+	[   1] +base[   2]  0001 GetCopyRight
+	[   2] +base[   3]  0002 GetInterface
+	[   3] +base[   4]  0003 GetPlugInName
+	[   4] +base[   5]  0004 GetPlugInType
+	[   5] +base[   6]  0005 GetPlugInVersion
+	[   6] +base[   7]  0006 QueryInterface
+
+
+PE File Base Relocations (interpreted .reloc section contents)
+
+Virtual Address: 00001000 Chunk size 288 (0x120) Number of fixups 140
+	reloc    0 offset   17 [1017] HIGHLOW
+	reloc    1 offset   67 [1067] HIGHLOW
+	reloc    2 offset   a0 [10a0] HIGHLOW
+	reloc    3 offset   a4 [10a4] HIGHLOW
+	reloc    4 offset   aa [10aa] HIGHLOW
+	reloc    5 offset   ae [10ae] HIGHLOW
+	reloc    6 offset   b4 [10b4] HIGHLOW
+	reloc    7 offset   b8 [10b8] HIGHLOW
+	reloc    8 offset   be [10be] HIGHLOW
+	reloc    9 offset   c2 [10c2] HIGHLOW
+	reloc   10 offset   c8 [10c8] HIGHLOW
+	reloc   11 offset   cc [10cc] HIGHLOW
+	reloc   12 offset   d2 [10d2] HIGHLOW
+	reloc   13 offset   d6 [10d6] HIGHLOW
+	reloc

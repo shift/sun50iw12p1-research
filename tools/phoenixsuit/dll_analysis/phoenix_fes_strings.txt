@@ -1,0 +1,177 @@
+!This program cannot be run in DOS mode.
+`.rdata
+@.data
+.reloc
+R4Cf;\$4
+HHtpHHtl
+SS@SSPVSS
+t#SSUP
+t$$VSS
+_^][YY
+VWuBhld
+"WWShxd
+PPPPPPPP
+PPPPPPPP
+t.;t$$t(
+VC20XC00U
+^}%95t{
+`h````
+ppxxxx
+(null)
+runtime error 
+TLOSS error
+SING error
+DOMAIN error
+- unable to initialize heap
+- not enough space for lowio initialization
+- not enough space for stdio initialization
+- pure virtual function call
+- not enough space for _onexit/atexit table
+- unable to open console device
+- unexpected heap error
+- unexpected multithread lock error
+- not enough space for thread data
+abnormal program termination
+- not enough space for environment
+- not enough space for arguments
+- floating point not loaded
+Microsoft Visual C++ Runtime Library
+Runtime Error!
+Program: 
+<program name unknown>
+GetLastActivePopup
+GetActiveWindow
+MessageBoxA
+user32.dll
+H:mm:ss
+dddd, MMMM dd, yyyy
+M/d/yy
+December
+November
+October
+September
+August
+February
+January
+Saturday
+Friday
+Thursday
+Wednesday
+Tuesday
+Monday
+Sunday
+SunMonTueWedThuFriSat
+JanFebMarAprMayJunJulAugSepOctNovDec
+OutputDebugStringA
+KERNEL32.dll
+GetCommandLineA
+GetVersion
+HeapAlloc
+HeapFree
+EnterCriticalSection
+LeaveCriticalSection
+ExitProcess
+TerminateProcess
+GetCurrentProcess
+GetCurrentThreadId
+TlsSetValue
+TlsAlloc
+TlsFree
+SetLastError
+TlsGetValue
+GetLastError
+SetHandleCount
+GetStdHandle
+GetFileType
+GetStartupInfoA
+DeleteCriticalSection
+GetModuleFileNameA
+FreeEnvironmentStringsA
+FreeEnvironmentStringsW
+WideCharToMultiByte
+GetEnvironmentStrings
+GetEnvironmentStringsW
+HeapDestroy
+HeapCreate
+VirtualFree
+WriteFile
+InitializeCriticalSection
+VirtualAlloc
+HeapReAlloc
+SetFilePointer
+InterlockedDecrement
+InterlockedIncrement
+GetCPInfo
+GetACP
+GetOEMCP
+GetProcAddress
+LoadLibraryA
+SetStdHandle
+FlushFileBuffers
+MultiByteToWideChar
+LCMapStringA
+LCMapStringW
+GetStringTypeA
+GetStringTypeW
+CloseHandle
+RtlUnwind
+Phoenix_Fes.dll
+GetAuthor
+GetCopyRight
+GetInterface
+GetPlugInName
+GetPlugInType
+GetPlugInVersion
+QueryInterface
+d4363f86-98ed-4132-aee7-2458e4c07590
+Fes_Open
+Phoenix_Fes.cpp
+ERROR:%s[%d]
+FUNC:%s:%s
+Phoenix_Fes
+scottyu
+Elf2Fes
+Phoenix_Fes_private.cpp
+Can't Trans to SERVER ! CodeSection %d DataSection %d
+3(3A3Q3q3(62676E7L7Q7n8u8
+;@<O<e<
+3!3%3)3-313
+4'454@4T4Z4h4q4
+565Y5_5j5o5y5~5
+6"6'6D6J6
+71777H7_7i7
+8,828T8h8
+9(9L9v9
+:,:^:n:
+<!=)=C=O=_=
+>?>c>j>{>
+?#?I?V?d?o?
+0,080T0i0
+1$1,141G1O1|1
+1I4W4]4w4|4
+5(5.585>5N5T5
+5>6+868>8Q8W8m8t8z8
+<O<g<|<
+=">G>Y>_>
+040A0F0S0_0
+1 191{1
+3M3_3n3
+4%4S4_4i4t4~4
+5	5x5~5
+6?6K6]6k6z6
+757[7u7|7
+9 9$9(9,909z9
+: :%:6:R:
+<5<<<@<D<H<L<P<T<X<
+=%=@=G=L=P=T=q=
+=:>@>D>H>L>
+>!?0?P?r?
+020L0W0L1\1
+2&20282F2d2
+3-424N4a4h4z4
+6S7]7y7
+;$<6<I<
+0 1$1(10181
+4$4,444<4D4L4T4\4d4l4t4
+4@5D5H5L5P5T5X5\5
+< <$<(<,<0<4<8<<<@<P<T<X<\<`<d<h<l<p<t<

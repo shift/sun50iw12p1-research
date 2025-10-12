@@ -1,0 +1,186 @@
+!This program cannot be run in DOS mode.
+`.rdata
+@.data
+.reloc
+RQh% "
+D$8AWUC
+T$8QPUSWR
+T$ QPWR
+T$ QPWR
+HHtpHHtl
+SS@SSPVSS
+t#SSUP
+t$$VSS
+_^][YY
+PPPPPPPP
+PPPPPPPP
+t.;t$$t(
+VC20XC00U
+`h````
+ppxxxx
+(null)
+runtime error 
+TLOSS error
+SING error
+DOMAIN error
+- unable to initialize heap
+- not enough space for lowio initialization
+- not enough space for stdio initialization
+- pure virtual function call
+- not enough space for _onexit/atexit table
+- unable to open console device
+- unexpected heap error
+- unexpected multithread lock error
+- not enough space for thread data
+abnormal program termination
+- not enough space for environment
+- not enough space for arguments
+- floating point not loaded
+Microsoft Visual C++ Runtime Library
+Runtime Error!
+Program: 
+<program name unknown>
+GetLastActivePopup
+GetActiveWindow
+MessageBoxA
+user32.dll
+H:mm:ss
+dddd, MMMM dd, yyyy
+M/d/yy
+December
+November
+October
+September
+August
+February
+January
+Saturday
+Friday
+Thursday
+Wednesday
+Tuesday
+Monday
+Sunday
+SunMonTueWedThuFriSat
+JanFebMarAprMayJunJulAugSepOctNovDec
+lua_pushnil
+lua_pushlightuserdata
+lua_tolstring
+lua_touserdata
+lua_pushinteger
+lua_tointeger
+lua_setfield
+lua_pushcclosure
+lua5.1.dll
+OutputDebugStringA
+CreateFileA
+CloseHandle
+DeviceIoControl
+HeapFree
+HeapReAlloc
+HeapAlloc
+GetCommandLineA
+GetVersion
+HeapDestroy
+HeapCreate
+VirtualFree
+InitializeCriticalSection
+DeleteCriticalSection
+EnterCriticalSection
+LeaveCriticalSection
+ExitProcess
+VirtualAlloc
+TerminateProcess
+GetCurrentProcess
+GetCurrentThreadId
+TlsSetValue
+TlsAlloc
+TlsFree
+SetLastError
+TlsGetValue
+GetLastError
+SetHandleCount
+GetStdHandle
+GetFileType
+GetStartupInfoA
+GetModuleFileNameA
+FreeEnvironmentStringsA
+FreeEnvironmentStringsW
+WideCharToMultiByte
+GetEnvironmentStrings
+GetEnvironmentStringsW
+WriteFile
+SetFilePointer
+InterlockedDecrement
+InterlockedIncrement
+GetCPInfo
+GetACP
+GetOEMCP
+GetProcAddress
+LoadLibraryA
+SetStdHandle
+MultiByteToWideChar
+LCMapStringA
+LCMapStringW
+GetStringTypeA
+GetStringTypeW
+FlushFileBuffers
+RtlUnwind
+KERNEL32.dll
+luaeFex.dll
+GetInterface
+l_RegAllFun
+Open Device %s Error
+Fex_Send Error %s %d
+D:\winners\eStudio\eTool300\StudioLinux\StudioPhoenix\luaappsdk_win32\C_Fun\luaeFex\eFexCore.cpp
+Fex_Recv Error %s %d
+Fex_transmit_receive Error %s %d
+get_msg 
+AWUSBFEX
+Fex_command Error %s %d
+Fex_command
+Fex_transmit_receive
+Fex_Recv
+Fex_Send
+Fex_Query
+Fex_Close
+Fex_Open
+1 1m1z1
+5.5K5P5
+9%9*9Q9V9t9y9
+9X<c<u<
+=2=6=<=@=F=J=P=T=Z=^=d=h=n=r=w=
+>$>*>0>6><>|>
+1+191A1G1
+6	7*7A7
+<!<)<1<9<E<J<V<^<f<n<
+=,=2=9=B=I=Q=W=b=j=
+0.0A0L0R0W0]0j0
+484I4O4b4
+9;9U9\9`9d9h9l9p9t9x9
+9::E:`:g:l:p:t:
+;Z;`;d;h;l;
+< <0<6<=<G<`<h<m<y<~<
+=-=9=?=L=\=b=j=
+=;>S>Y>
+???I?j?
+0@0e0t0
+121@1M1R1X1
+2G2*3C3x3
+5.5U5d5
+6+626@6S6
+9K9b9o9
+:/:8:T:w:
+:Q;Y;_;g;
+;8=P=W=_=d=h=l=
+=B>H>L>P>T>
+?;?m?t?x?|?
+2&2/2;2m2
+3$3*323:3E3s3
+5!5.5>5_5k5}5
+616M7Z7
+9G9T9Y9f9r9,:3:L:
+:.;3;R;_;l;v;
+;	<a<w<
+3$3,343<3D3L3P3X3
+5 <(<,<0<4<8<<<@<D<H<L<P<T<X<\<`<d<h<l<p<t<x<|<
