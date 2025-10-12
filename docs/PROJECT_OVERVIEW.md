@@ -83,9 +83,10 @@ Four DTB configurations identified with two distinct hardware variants:
 Key hardware mappings documented for mainline Linux integration.
 
 ### Build Artifacts Ready
-- **u-boot-sunxi-with-spl.bin** (657.5 KB) - Complete bootloader
+- **u-boot-sunxi-with-spl.bin** (732KB) - Complete bootloader with USB+HDMI
 - **sunxi-spl.bin** (32 KB) - Secondary Program Loader
 - **u-boot.dtb** - Device tree for HY300 hardware
+- **sun50i-h713-hy300.dtb** (14KB) - Mainline device tree from 967-line source
 
 ## Development Environment
 
@@ -115,20 +116,25 @@ Key hardware mappings documented for mainline Linux integration.
 - **Tasks 011-015:** Phase VI-VII - Kernel Module Development ✅
 - **Tasks 016-022:** HDMI Input and Driver Implementation ✅
 - **Tasks 023-024:** Kodi Hardware Compatibility and Graphics ✅
-- **Task 025:** Kodi Remote Input System Design 🔄
+- **Task 025:** Kodi Remote Input System Design ✅
 - **Tasks 027-028:** USB Camera Keystone and Minimal Distribution ✅
+- **Task 019:** Keystone Parameter Sysfs Interface (panelparam) ✅
+- **Task 028:** Mali GPU Driver Migration (Panfrost) ✅
+- **Task 026:** U-Boot and Device Tree Completion Verification ✅
 
 ### Current Active Task
-- **Phase IX:** Hardware deployment and validation with complete VM-tested software stack
+- **Phase IX:** Hardware deployment and validation (BLOCKED - requires physical device access)
 
 ### Ready for Hardware Testing Phase
-- **Phase IX:** Hardware-based testing and validation with complete software stack
-- Serial console access for kernel boot debugging and real hardware validation
-- FEL mode testing for safe bootloader and device tree deployment
-- Systematic driver enablement with complete VM-tested software foundation
-- Complete software stack ready for hardware deployment
+- **Complete Software Stack:** All components implemented and VM-validated
+- **U-Boot Bootloader:** 732KB with USB and HDMI support enabled
+- **Device Tree:** 14KB (967 lines) with all hardware configured
+- **Kernel Modules:** MIPS loader (905 lines with keystone sysfs), HDMI capture, motor control
+- **GPU Driver:** Panfrost open-source driver for Mali-T720
+- **System Services:** Python keystone and WiFi services with hardware/simulation modes
+- **Kodi Integration:** Complete media center with pvr.hdmi-input addon
 
-**Current Status:** Phase VIII completed - Complete VM-tested software environment ready for hardware deployment.
+**Current Status:** Phase VIII completed (October 2025) - Complete VM-tested software environment ready for hardware deployment.
 
 ### Documentation System
 - `docs/tasks/completed/` - All finished task documentation
@@ -142,9 +148,9 @@ Key hardware mappings documented for mainline Linux integration.
 Complete mainline device tree development for H713 SoC with full hardware enablement.
 
 **Key Achievements:**
-- Complete mainline device tree created (`sun50i-h713-hy300.dts`, 791 lines)
+- Complete mainline device tree created (`sun50i-h713-hy300.dts`, 967 lines)
 - All hardware components properly configured and validated
-- Device tree compilation verified (produces 10.5KB DTB)
+- Device tree compilation verified (produces 14KB DTB)
 - Hardware enablement matrix documented for all components
 - Testing methodology established with FEL recovery procedures
 
@@ -226,7 +232,8 @@ Complete mainline kernel module development for MIPS co-processor integration an
 - Complete implementation specifications for all missing platform drivers
 
 **Implementation Status:**
-- **Driver File:** `drivers/misc/sunxi-mipsloader.c` (441 lines) - COMPLETE
+- **Driver File:** `drivers/misc/sunxi-mipsloader.c` (905 lines with keystone interface) - COMPLETE
+- **Keystone Sysfs:** panelparam attribute for 4-corner geometric correction - COMPLETE
 - **Build System:** Makefile and Nix integration - COMPLETE
 - **Memory Layout:** Factory-analyzed 40MB MIPS region implementation - COMPLETE
 - **Register Interface:** 0x3061000 control interface - COMPLETE
@@ -251,6 +258,9 @@ Complete NixOS VM implementation with Kodi media center and HY300 services for s
 6. **Kodi HDMI Integration** ✅ - pvr.hdmi-input addon with channel management
 7. **Prometheus Metrics** ✅ - All kernel drivers with comprehensive monitoring
 8. **VM Testing Framework** ✅ - Complete validation without hardware access
+9. **Keystone Sysfs Interface** ✅ - Factory-compatible panelparam attribute (Task 019)
+10. **Panfrost GPU Driver** ✅ - Open-source Mali-T720 driver integration (Task 028)
+11. **U-Boot Verification** ✅ - USB and HDMI support validated (Task 026)
 
 **Implementation Highlights:**
 - **Kernel Modules with Metrics**: MIPS loader, TVCAP, motor control all export Prometheus metrics
@@ -265,39 +275,33 @@ Complete NixOS VM implementation with Kodi media center and HY300 services for s
 - [`ai/contexts/`](../ai/contexts/) - Phase VIII delegation context files
 - [`docs/tasks/completed/019-*`](tasks/completed/) - All Phase VIII task documentation
 
-### 🎯 **Phase IX: Hardware Testing and Validation** - CURRENT PHASE
-6. **VM Testing** 🔄 - Functionality validation in progress
+### 🎯 **Phase IX: Hardware Testing and Validation** - CURRENT PHASE (BLOCKED)
 
-**Key Achievements:**
-- **Complete VM System**: NixOS configuration with Kodi auto-start and HY300 services
-- **Real Python Services**: Keystone motor control and WiFi management implementations
-- **Service Architecture**: Clean hardware/simulation mode separation for development
-- **Build System**: Embedded service packages in flake.nix resolve path dependencies
-- **Testing Framework**: Complete VM environment for software validation
+**Hardware Requirements:**
+- Serial console access (UART) for kernel boot debugging
+- FEL mode USB access for bootloader testing  
+- Physical HY300 device for driver validation
 
-**Implementation Details:**
-- **VM Configuration**: `nixos/hy300-vm.nix` with 2GB RAM, port forwarding, auto-login
-- **Keystone Service**: Complete motor control with accelerometer simulation
-- **WiFi Service**: NetworkManager integration with simulation mode  
-- **Kodi Integration**: Auto-start with HY300-specific plugins and configuration
-- **Service Management**: Proper systemd integration with logging and persistence
+**Software Stack Ready for Deployment:**
+- ✅ U-Boot bootloader (732KB with USB+HDMI support)
+- ✅ Device tree (14KB, 967 lines source)
+- ✅ Kernel modules with Prometheus metrics
+- ✅ Panfrost GPU driver
+- ✅ Python services (keystone, WiFi)
+- ✅ Kodi media center with HY300 integration
+- ✅ Complete NixOS system configuration
 
-**Testing Status:**
-- **VM Build**: First complete build in progress (downloading dependencies)
-- **Service Integration**: Kodi + HY300 services ready for validation
-- **Port Forwarding**: SSH (2222), Kodi web (8888), HTTP (8080) configured
-- **Simulation Mode**: All hardware-dependent functions work in simulation
+**Testing Priorities:**
+1. Serial console boot validation
+2. U-Boot functionality testing
+3. Device tree hardware mapping verification
+4. Kernel module loading and MIPS communication
+5. Keystone correction sysfs interface testing
+6. GPU and display subsystem validation
+7. WiFi and network connectivity
+8. Projector hardware validation (motors, sensors, thermal)
 
-**Documentation:**
-- [`nixos/BUILD.md`](../nixos/BUILD.md) - VM implementation status and service architecture
-- [`nixos/VM-TESTING.md`](../nixos/VM-TESTING.md) - Complete VM testing guide and procedures
-- [`nixos/hy300-vm.nix`](../nixos/hy300-vm.nix) - VM configuration
-- [`docs/tasks/019-vm-testing-validation.md`](tasks/019-vm-testing-validation.md) - Current task validation
-
-**Next Steps:**
-- Complete VM testing validation and service integration testing
-- Performance and stability validation
-- Hardware mode preparation and transition testing
+**Status:** All software development complete and VM-validated. Blocked on physical hardware access.
 
 ### ✅ **Phase VIII: AV1 Hardware Discovery** - COMPLETED
 **MAJOR BREAKTHROUGH:** Discovery of dedicated AV1 hardware acceleration in H713 SoC.
